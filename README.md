@@ -68,6 +68,10 @@ dotnet publish src/NeverForget.Client -c Release -r win-x64 --self-contained fal
 
 The WPF application must remain running to display reminder popups. REST polling cannot wake a closed Windows application.
 
+## Hoppscotch collection
+
+Import `http/NeverForget.hoppscotch.json` using **Collections → Import → Import from Hoppscotch**. The collection contains a sample request for every endpoint and defines `baseUrl`, `apiKey`, and `reminderId` as collection variables. After creating a reminder, copy its returned `id` into `reminderId` before running the get, update, acknowledge, or delete requests.
+
 ## Free MVP hosting: Render + Neon
 
 The simplest free setup without requiring a payment card is:

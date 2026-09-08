@@ -1,0 +1,228 @@
+[
+  {
+    "v": 12,
+    "name": "NeverForget",
+    "folders": [],
+    "requests": [
+      {
+        "v": "17",
+        "name": "Health check",
+        "method": "GET",
+        "endpoint": "<<baseUrl>>/health",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "none",
+          "authActive": false
+        },
+        "body": {
+          "contentType": null,
+          "body": null
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Checks whether the NeverForget server is available."
+      },
+      {
+        "v": "17",
+        "name": "Create reminder",
+        "method": "POST",
+        "endpoint": "<<baseUrl>>/api/reminders",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n  \"title\": \"Important meeting\",\n  \"message\": \"Join five minutes early.\",\n  \"scheduledAt\": \"2026-09-09T18:30:00+02:00\"\n}"
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Creates a new reminder. Copy the id from the response into the reminderId collection variable."
+      },
+      {
+        "v": "17",
+        "name": "List reminders by date range",
+        "method": "GET",
+        "endpoint": "<<baseUrl>>/api/reminders",
+        "params": [
+          {
+            "key": "from",
+            "value": "2026-09-01T00:00:00+02:00",
+            "active": true,
+            "description": "Inclusive start of the requested date range."
+          },
+          {
+            "key": "to",
+            "value": "2026-09-30T23:59:59+02:00",
+            "active": true,
+            "description": "Inclusive end of the requested date range."
+          }
+        ],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": null,
+          "body": null
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Returns reminders scheduled within an inclusive date and time range."
+      },
+      {
+        "v": "17",
+        "name": "Get reminder by id",
+        "method": "GET",
+        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": null,
+          "body": null
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Returns a single reminder using the reminderId collection variable."
+      },
+      {
+        "v": "17",
+        "name": "List due reminders",
+        "method": "GET",
+        "endpoint": "<<baseUrl>>/api/reminders/due",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": null,
+          "body": null
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Returns unacknowledged reminders whose scheduled time has passed."
+      },
+      {
+        "v": "17",
+        "name": "Update reminder",
+        "method": "PUT",
+        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n  \"title\": \"Updated meeting\",\n  \"message\": \"The meeting time has changed.\",\n  \"scheduledAt\": \"2026-09-10T09:15:00+02:00\"\n}"
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Updates and rearms the reminder identified by reminderId."
+      },
+      {
+        "v": "17",
+        "name": "Acknowledge reminder",
+        "method": "POST",
+        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>/acknowledge",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": null,
+          "body": null
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Acknowledges the reminder identified by reminderId."
+      },
+      {
+        "v": "17",
+        "name": "Delete reminder",
+        "method": "DELETE",
+        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": null,
+          "body": null
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Deletes the reminder identified by reminderId."
+      }
+    ],
+    "auth": {
+      "authType": "api-key",
+      "authActive": true,
+      "key": "X-Api-Key",
+      "value": "<<apiKey>>",
+      "addTo": "HEADERS"
+    },
+    "headers": [
+      {
+        "key": "Accept",
+        "value": "application/json",
+        "active": true,
+        "description": "Request JSON responses."
+      }
+    ],
+    "variables": [
+      {
+        "key": "baseUrl",
+        "initialValue": "http://localhost:5081",
+        "currentValue": "http://localhost:5081",
+        "secret": false
+      },
+      {
+        "key": "apiKey",
+        "initialValue": "",
+        "currentValue": "",
+        "secret": true
+      },
+      {
+        "key": "reminderId",
+        "initialValue": "00000000-0000-0000-0000-000000000000",
+        "currentValue": "00000000-0000-0000-0000-000000000000",
+        "secret": false
+      }
+    ],
+    "description": "Sample requests for every NeverForget REST API endpoint.",
+    "preRequestScript": "",
+    "testScript": ""
+  }
+]
