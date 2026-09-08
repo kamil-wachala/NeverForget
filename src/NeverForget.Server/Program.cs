@@ -1,12 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using NeverForget.Server.Data;
 using NeverForget.Server.Infrastructure;
+using NeverForget.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IReminderService, ReminderService>();
 
 var postgresConnection = builder.Configuration.GetConnectionString("Postgres");
 builder.Services.AddDbContext<NeverForgetDbContext>(options =>

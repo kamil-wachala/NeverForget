@@ -79,6 +79,15 @@ public sealed class ReminderApiTests : IClassFixture<ReminderApiFactory>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Invalid_reminder_returns_bad_request()
+    {
+        var response = await _client.PostAsJsonAsync("/api/reminders",
+            new CreateReminderRequest(" ", "Valid message", DateTimeOffset.UtcNow));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }
 
 public sealed class ReminderApiFactory : WebApplicationFactory<Program>
