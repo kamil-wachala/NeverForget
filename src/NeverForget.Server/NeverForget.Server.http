@@ -1,0 +1,29 @@
+@NeverForget_Server = http://localhost:5081
+@ApiKey = change-me
+
+GET {{NeverForget_Server}}/health
+Accept: application/json
+
+###
+
+POST {{NeverForget_Server}}/api/reminders
+Content-Type: application/json
+X-Api-Key: {{ApiKey}}
+
+{
+  "title": "Ważne spotkanie",
+  "message": "Połącz się pięć minut wcześniej.",
+  "scheduledAt": "2026-09-07T18:30:00+02:00"
+}
+
+###
+
+GET {{NeverForget_Server}}/api/reminders?from=2026-09-01T00%3A00%3A00%2B02%3A00&to=2026-09-30T23%3A59%3A59%2B02%3A00
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+GET {{NeverForget_Server}}/api/reminders/due
+Accept: application/json
+X-Api-Key: {{ApiKey}}
