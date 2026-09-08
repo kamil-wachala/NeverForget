@@ -45,6 +45,8 @@ public sealed class DatabaseSchemaInitializerTests
         Assert.Equal("Legacy", reminder.Title);
         Assert.Equal("30 18 * * *", reminder.CronExpression);
         Assert.Equal("UTC", reminder.TimeZoneId);
+        Assert.True(reminder.IsRecurring);
+        Assert.Null(reminder.EndsAtUtc);
         Assert.Equal(new DateTime(2026, 9, 8, 18, 30, 0), reminder.NextOccurrenceUtc);
     }
 }

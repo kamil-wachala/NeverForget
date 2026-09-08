@@ -50,6 +50,34 @@ public static class DatabaseSchemaInitializer
                 cancellationToken);
         }
 
+        if (!columns.Contains("IsRecurring"))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE \"Reminders\" ADD COLUMN \"IsRecurring\" INTEGER NOT NULL DEFAULT 1;",
+                cancellationToken);
+        }
+
+        if (!columns.Contains("ScheduledAtUtc"))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE \"Reminders\" ADD COLUMN \"ScheduledAtUtc\" TEXT NULL;",
+                cancellationToken);
+        }
+
+        if (!columns.Contains("EndsAtUtc"))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE \"Reminders\" ADD COLUMN \"EndsAtUtc\" TEXT NULL;",
+                cancellationToken);
+        }
+
+        if (!columns.Contains("IsAcknowledged"))
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE \"Reminders\" ADD COLUMN \"IsAcknowledged\" INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken);
+        }
+
         if (addedCronExpression && hadLegacySchedule)
         {
             await dbContext.Database.ExecuteSqlRawAsync(
@@ -112,6 +140,10 @@ public static class DatabaseSchemaInitializer
             ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "CronExpression" character varying(200) NOT NULL DEFAULT '0 9 * * *';
             ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "TimeZoneId" character varying(100) NOT NULL DEFAULT 'UTC';
             ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "NextOccurrenceUtc" timestamp with time zone NOT NULL DEFAULT '-infinity';
+            ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "IsRecurring" boolean NOT NULL DEFAULT TRUE;
+            ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "ScheduledAtUtc" timestamp with time zone NULL;
+            ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "EndsAtUtc" timestamp with time zone NULL;
+            ALTER TABLE "Reminders" ADD COLUMN IF NOT EXISTS "IsAcknowledged" boolean NOT NULL DEFAULT FALSE;
             CREATE INDEX IF NOT EXISTS "IX_Reminders_NextOccurrenceUtc" ON "Reminders" ("NextOccurrenceUtc");
             """,
             cancellationToken);

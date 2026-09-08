@@ -24,12 +24,12 @@
         </ComboBox>
 
         <StackPanel x:Name="EveryMinutesPanel" Visibility="Collapsed">
-            <TextBlock Text="Interval in minutes (1–59)" FontWeight="SemiBold" />
+            <TextBlock Text="Interval in minutes (1-59)" FontWeight="SemiBold" />
             <TextBox x:Name="IntervalMinutesTextBox" Text="15" TextChanged="ScheduleInput_Changed" />
         </StackPanel>
 
         <StackPanel x:Name="HourlyPanel" Visibility="Collapsed">
-            <TextBlock Text="Minute of each hour (0–59)" FontWeight="SemiBold" />
+            <TextBlock Text="Minute of each hour (0-59)" FontWeight="SemiBold" />
             <TextBox x:Name="HourlyMinuteTextBox" Text="0" TextChanged="ScheduleInput_Changed" />
         </StackPanel>
 
@@ -54,8 +54,16 @@
         </StackPanel>
 
         <StackPanel x:Name="MonthlyPanel" Visibility="Collapsed">
-            <TextBlock Text="Day of month (1–31)" FontWeight="SemiBold" />
-            <TextBox x:Name="MonthlyDayTextBox" Text="1" TextChanged="ScheduleInput_Changed" />
+            <TextBlock Text="When in the month" FontWeight="SemiBold" />
+            <ComboBox x:Name="MonthlyModeComboBox" SelectionChanged="ScheduleInput_Changed">
+                <ComboBoxItem Content="Specific day of the month" />
+                <ComboBoxItem Content="Last day of the month" />
+                <ComboBoxItem Content="Last weekday (Monday-Friday)" />
+            </ComboBox>
+            <StackPanel x:Name="MonthlyDayPanel">
+                <TextBlock Text="Day of month (1-31)" FontWeight="SemiBold" />
+                <TextBox x:Name="MonthlyDayTextBox" Text="1" TextChanged="ScheduleInput_Changed" />
+            </StackPanel>
             <TextBlock Text="Time (HH:mm)" FontWeight="SemiBold" />
             <TextBox x:Name="MonthlyTimeTextBox" Text="09:00" TextChanged="ScheduleInput_Changed" />
         </StackPanel>
@@ -65,13 +73,23 @@
             <TextBox x:Name="CustomCronTextBox" Text="0 9 * * *" TextChanged="ScheduleInput_Changed" />
             <TextBlock Text="minute  hour  day-of-month  month  day-of-week"
                        Foreground="#65708A" FontSize="12" Margin="0,-4,0,8" />
-            <TextBlock Text="Examples: */10 * * * * · 30 8 * * 1-5 · 0 12 1 * *"
+            <TextBlock Text="Examples: */10 * * * * | 30 8 * * 1-5 | 0 9 LW * *"
                        Foreground="#65708A" FontSize="12" TextWrapping="Wrap" />
         </StackPanel>
 
         <TextBlock Text="Time zone" FontWeight="SemiBold" Margin="0,8,0,0" />
         <ComboBox x:Name="TimeZoneComboBox" DisplayMemberPath="DisplayName"
                   SelectionChanged="ScheduleInput_Changed" MaxDropDownHeight="260" />
+
+        <CheckBox x:Name="ForeverCheckBox" Content="Repeat forever" IsChecked="True"
+                  FontWeight="SemiBold" Margin="0,6,0,8"
+                  Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+        <StackPanel x:Name="EndDatePanel" Visibility="Collapsed">
+            <TextBlock Text="Repeat through" FontWeight="SemiBold" />
+            <DatePicker x:Name="EndDatePicker" SelectedDateChanged="ScheduleInput_Changed" />
+            <TextBlock Text="Occurrences on the selected date are included."
+                       Foreground="#65708A" FontSize="12" Margin="0,-5,0,6" />
+        </StackPanel>
 
         <Border Background="#F4F6FA" CornerRadius="7" Padding="10" Margin="0,6,0,8">
             <StackPanel>

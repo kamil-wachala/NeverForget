@@ -10,6 +10,7 @@ public sealed class CronScheduleTests
     [InlineData("30 9 * * *")]
     [InlineData("0 8 * * 1-5")]
     [InlineData("0 12 1 * *")]
+    [InlineData("0 9 LW * *")]
     public void Supported_cron_patterns_are_valid(string expression)
     {
         Assert.True(CronSchedule.TryValidate(expression, "UTC", out var error), error);

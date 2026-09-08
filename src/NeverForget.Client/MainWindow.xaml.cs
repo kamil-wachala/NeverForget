@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
@@ -97,7 +98,14 @@ public partial class MainWindow : Window
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryReadEditor(out var title, out var message, out var cronExpression, out var timeZoneId))
+        if (!TryReadEditor(
+                out var title,
+                out var message,
+                out var isRecurring,
+                out var scheduledAt,
+                out var cronExpression,
+                out var timeZoneId,
+                out var endsAt))
         {
             return;
         }
@@ -106,12 +114,14 @@ public partial class MainWindow : Window
         {
             if (_editedReminderId is Guid id)
             {
-                await GetApiClient().UpdateAsync(id, new UpdateReminderRequest(title, message, cronExpression, timeZoneId));
+                await GetApiClient().UpdateAsync(id, new UpdateReminderRequest(
+                    title, message, isRecurring, scheduledAt, cronExpression, timeZoneId, endsAt));
                 StatusTextBlock.Text = "The reminder was updated.";
             }
             else
             {
-                await GetApiClient().CreateAsync(new CreateReminderRequest(title, message, cronExpression, timeZoneId));
+                await GetApiClient().CreateAsync(new CreateReminderRequest(
+                    title, message, isRecurring, scheduledAt, cronExpression, timeZoneId, endsAt));
                 StatusTextBlock.Text = "The reminder was added.";
             }
 
@@ -157,7 +167,17 @@ public partial class MainWindow : Window
         DeleteButton.Visibility = Visibility.Visible;
         TitleTextBox.Text = selected.Title;
         MessageTextBox.Text = selected.Message;
-        ScheduleEditor.SetSchedule(selected.CronExpression, selected.TimeZoneId);
+        IsRecurringCheckBox.IsChecked = selected.IsRecurring;
+        if (selected.IsRecurring)
+        {
+            ScheduleEditor.SetSchedule(selected.CronExpression!, selected.TimeZoneId!, selected.EndsAt);
+        }
+        else if (selected.ScheduledAt is DateTimeOffset scheduledAt)
+        {
+            var local = scheduledAt.LocalDateTime;
+            ScheduledDatePicker.SelectedDate = local.Date;
+            ScheduledTimeTextBox.Text = local.ToString("HH:mm", CultureInfo.InvariantCulture);
+        }
     }
 
     private async void PollingTimer_Tick(object? sender, EventArgs e) => await PollDueRemindersAsync();
@@ -211,13 +231,19 @@ public partial class MainWindow : Window
     private bool TryReadEditor(
         out string title,
         out string message,
-        out string cronExpression,
-        out string timeZoneId)
+        out bool isRecurring,
+        out DateTimeOffset? scheduledAt,
+        out string? cronExpression,
+        out string? timeZoneId,
+        out DateTimeOffset? endsAt)
     {
         title = TitleTextBox.Text.Trim();
         message = MessageTextBox.Text.Trim();
-        cronExpression = string.Empty;
-        timeZoneId = string.Empty;
+        isRecurring = IsRecurringCheckBox.IsChecked == true;
+        scheduledAt = null;
+        cronExpression = null;
+        timeZoneId = null;
+        endsAt = null;
 
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(message))
         {
@@ -225,11 +251,25 @@ public partial class MainWindow : Window
             return false;
         }
 
-        if (!ScheduleEditor.TryGetSchedule(out cronExpression, out timeZoneId, out var scheduleError))
+        if (!isRecurring)
+        {
+            if (!TryReadOneTimeSchedule(out scheduledAt, out var oneTimeError))
+            {
+                ShowError(oneTimeError!);
+                return false;
+            }
+
+            return true;
+        }
+
+        if (!ScheduleEditor.TryGetSchedule(out var cron, out var zone, out endsAt, out var scheduleError))
         {
             ShowError(scheduleError ?? "Enter a valid schedule.");
             return false;
         }
+
+        cronExpression = cron;
+        timeZoneId = zone;
 
         return true;
     }
@@ -242,7 +282,44 @@ public partial class MainWindow : Window
         DeleteButton.Visibility = Visibility.Collapsed;
         TitleTextBox.Clear();
         MessageTextBox.Clear();
+        IsRecurringCheckBox.IsChecked = false;
+        var suggestedTime = DateTime.Now.AddMinutes(5);
+        ScheduledDatePicker.SelectedDate = suggestedTime.Date;
+        ScheduledTimeTextBox.Text = suggestedTime.ToString("HH:mm", CultureInfo.InvariantCulture);
         ScheduleEditor.Reset();
+    }
+
+    private void IsRecurringCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        var isRecurring = IsRecurringCheckBox.IsChecked == true;
+        OneTimeSchedulePanel.Visibility = isRecurring ? Visibility.Collapsed : Visibility.Visible;
+        ScheduleEditor.Visibility = isRecurring ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private bool TryReadOneTimeSchedule(out DateTimeOffset? scheduledAt, out string? error)
+    {
+        scheduledAt = null;
+        if (ScheduledDatePicker.SelectedDate is not DateTime date
+            || !TimeSpan.TryParseExact(
+                ScheduledTimeTextBox.Text.Trim(),
+                ["h\\:mm", "hh\\:mm"],
+                CultureInfo.InvariantCulture,
+                out var time))
+        {
+            error = "Select a reminder date and enter a valid time in HH:mm format.";
+            return false;
+        }
+
+        var localDateTime = DateTime.SpecifyKind(date.Date.Add(time), DateTimeKind.Unspecified);
+        scheduledAt = new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
+        if (scheduledAt <= DateTimeOffset.Now)
+        {
+            error = "The reminder date and time must be in the future.";
+            return false;
+        }
+
+        error = null;
+        return true;
     }
 
     private async Task RunUiActionAsync(Func<Task> action)

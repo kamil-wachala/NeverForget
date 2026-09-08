@@ -22,6 +22,8 @@ public partial class CronEditor : UserControl
             .ToList();
 
         ScheduleTypeComboBox.SelectedIndex = 2;
+        MonthlyModeComboBox.SelectedIndex = 0;
+        EndDatePicker.SelectedDate = DateTime.Today.AddYears(5);
         SelectTimeZone(CronSchedule.GetPortableTimeZoneId(TimeZoneInfo.Local));
         Loaded += (_, _) => UpdateEditor();
     }
@@ -31,12 +33,15 @@ public partial class CronEditor : UserControl
         _isUpdating = true;
         ScheduleTypeComboBox.SelectedIndex = 2;
         DailyTimeTextBox.Text = DateTime.Now.AddMinutes(5).ToString("HH:mm", CultureInfo.InvariantCulture);
+        MonthlyModeComboBox.SelectedIndex = 0;
+        ForeverCheckBox.IsChecked = true;
+        EndDatePicker.SelectedDate = DateTime.Today.AddYears(5);
         SelectTimeZone(CronSchedule.GetPortableTimeZoneId(TimeZoneInfo.Local));
         _isUpdating = false;
         UpdateEditor();
     }
 
-    public void SetSchedule(string cronExpression, string timeZoneId)
+    public void SetSchedule(string cronExpression, string timeZoneId, DateTimeOffset? endsAt)
     {
         _isUpdating = true;
         CustomCronTextBox.Text = cronExpression;
@@ -46,7 +51,7 @@ public partial class CronEditor : UserControl
         var hourly = Regex.Match(cronExpression, @"^(\d+) \* \* \* \*$");
         var daily = Regex.Match(cronExpression, @"^(\d+) (\d+) \* \* \*$");
         var weekly = Regex.Match(cronExpression, @"^(\d+) (\d+) \* \* ([0-6](?:,[0-6])*)$");
-        var monthly = Regex.Match(cronExpression, @"^(\d+) (\d+) (\d+) \* \*$");
+        var monthly = Regex.Match(cronExpression, @"^(\d+) (\d+) (\d+|L|LW) \* \*$");
 
         if (everyMinutes.Success)
         {
@@ -72,7 +77,16 @@ public partial class CronEditor : UserControl
         else if (monthly.Success)
         {
             ScheduleTypeComboBox.SelectedIndex = 4;
-            MonthlyDayTextBox.Text = monthly.Groups[3].Value;
+            MonthlyModeComboBox.SelectedIndex = monthly.Groups[3].Value switch
+            {
+                "L" => 1,
+                "LW" => 2,
+                _ => 0
+            };
+            if (MonthlyModeComboBox.SelectedIndex == 0)
+            {
+                MonthlyDayTextBox.Text = monthly.Groups[3].Value;
+            }
             MonthlyTimeTextBox.Text = FormatTime(monthly.Groups[2].Value, monthly.Groups[1].Value);
         }
         else
@@ -80,21 +94,48 @@ public partial class CronEditor : UserControl
             ScheduleTypeComboBox.SelectedIndex = 5;
         }
 
+        ForeverCheckBox.IsChecked = endsAt is null;
+        EndDatePicker.SelectedDate = endsAt is null
+            ? DateTime.Today.AddYears(5)
+            : TimeZoneInfo.ConvertTime(endsAt.Value, CronSchedule.ResolveTimeZone(timeZoneId)).Date;
+
         _isUpdating = false;
         UpdateEditor();
     }
 
-    public bool TryGetSchedule(out string cronExpression, out string timeZoneId, out string? error)
+    public bool TryGetSchedule(
+        out string cronExpression,
+        out string timeZoneId,
+        out DateTimeOffset? endsAt,
+        out string? error)
     {
         cronExpression = BuildExpression(out error);
         timeZoneId = (TimeZoneComboBox.SelectedItem as TimeZoneOption)?.Id ?? string.Empty;
+        endsAt = null;
 
         if (error is not null)
         {
             return false;
         }
 
-        return CronSchedule.TryValidate(cronExpression, timeZoneId, out error);
+        if (!CronSchedule.TryValidate(cronExpression, timeZoneId, out error))
+        {
+            return false;
+        }
+
+        if (!TryGetEndDate(timeZoneId, out endsAt, out error))
+        {
+            return false;
+        }
+
+        if (endsAt is not null
+            && CronSchedule.GetNextOccurrence(cronExpression, timeZoneId, DateTimeOffset.UtcNow) > endsAt)
+        {
+            error = "The schedule has no occurrence on or before its end date.";
+            return false;
+        }
+
+        return true;
     }
 
     private void ScheduleInput_Changed(object sender, RoutedEventArgs e)
@@ -118,6 +159,8 @@ public partial class CronEditor : UserControl
         WeeklyPanel.Visibility = ScheduleTypeComboBox.SelectedIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
         MonthlyPanel.Visibility = ScheduleTypeComboBox.SelectedIndex == 4 ? Visibility.Visible : Visibility.Collapsed;
         CustomPanel.Visibility = ScheduleTypeComboBox.SelectedIndex == 5 ? Visibility.Visible : Visibility.Collapsed;
+        MonthlyDayPanel.Visibility = MonthlyModeComboBox.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EndDatePanel.Visibility = ForeverCheckBox.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
 
         var expression = BuildExpression(out var inputError);
         CronExpressionTextBlock.Text = string.IsNullOrWhiteSpace(expression) ? "—" : expression;
@@ -131,6 +174,13 @@ public partial class CronEditor : UserControl
             return;
         }
 
+        if (!TryGetEndDate(timeZoneId, out var endsAt, out scheduleError))
+        {
+            ValidationTextBlock.Text = scheduleError;
+            NextRunsItemsControl.ItemsSource = Array.Empty<string>();
+            return;
+        }
+
         ValidationTextBlock.Text = string.Empty;
         var nextRuns = new List<string>();
         var cursor = DateTimeOffset.UtcNow;
@@ -138,9 +188,18 @@ public partial class CronEditor : UserControl
         for (var i = 0; i < 5; i++)
         {
             var occurrence = CronSchedule.GetNextOccurrence(expression, timeZoneId, cursor);
+            if (endsAt is not null && occurrence > endsAt)
+            {
+                break;
+            }
             var localOccurrence = TimeZoneInfo.ConvertTime(occurrence, timeZone);
             nextRuns.Add(localOccurrence.ToString("ddd, dd MMM yyyy HH:mm zzz", CultureInfo.GetCultureInfo("en-GB")));
             cursor = occurrence;
+        }
+
+        if (nextRuns.Count == 0 && endsAt is not null)
+        {
+            ValidationTextBlock.Text = "The schedule has no occurrence on or before its end date.";
         }
 
         NextRunsItemsControl.ItemsSource = nextRuns;
@@ -184,11 +243,26 @@ public partial class CronEditor : UserControl
                 return $"{weeklyTime.Minutes} {weeklyTime.Hours} * * {string.Join(',', days)}";
 
             case 4:
-                if (!TryReadNumber(MonthlyDayTextBox.Text, 1, 31, "Day of month", out var day, out error)
-                    || !TryReadTime(MonthlyTimeTextBox.Text, out var monthlyTime, out error))
+                if (!TryReadTime(MonthlyTimeTextBox.Text, out var monthlyTime, out error))
                 {
                     return string.Empty;
                 }
+
+                if (MonthlyModeComboBox.SelectedIndex == 1)
+                {
+                    return $"{monthlyTime.Minutes} {monthlyTime.Hours} L * *";
+                }
+
+                if (MonthlyModeComboBox.SelectedIndex == 2)
+                {
+                    return $"{monthlyTime.Minutes} {monthlyTime.Hours} LW * *";
+                }
+
+                if (!TryReadNumber(MonthlyDayTextBox.Text, 1, 31, "Day of month", out var day, out error))
+                {
+                    return string.Empty;
+                }
+
                 return $"{monthlyTime.Minutes} {monthlyTime.Hours} {day} * *";
 
             case 5:
@@ -232,6 +306,33 @@ public partial class CronEditor : UserControl
             string.Equals(x.Id, timeZoneId, StringComparison.OrdinalIgnoreCase))
             ?? options.FirstOrDefault(x => x.Id == "UTC")
             ?? options.First();
+    }
+
+    private bool TryGetEndDate(string timeZoneId, out DateTimeOffset? endsAt, out string? error)
+    {
+        endsAt = null;
+        error = null;
+        if (ForeverCheckBox.IsChecked == true)
+        {
+            return true;
+        }
+
+        if (EndDatePicker.SelectedDate is not DateTime endDate)
+        {
+            error = "Select the last date for this recurring reminder.";
+            return false;
+        }
+
+        var endOfDay = DateTime.SpecifyKind(endDate.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
+        var timeZone = CronSchedule.ResolveTimeZone(timeZoneId);
+        endsAt = new DateTimeOffset(endOfDay, timeZone.GetUtcOffset(endOfDay));
+        if (endsAt <= DateTimeOffset.UtcNow)
+        {
+            error = "The recurrence end date must be in the future.";
+            return false;
+        }
+
+        return true;
     }
 
     private static bool TryReadNumber(

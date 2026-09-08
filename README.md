@@ -8,11 +8,11 @@ NeverForget is a reminder application built using a client-server architecture:
 - `NeverForget.Scheduling` - shared cron parsing and occurrence calculation;
 - `NeverForget.Server.Tests` - API integration tests.
 
-The client polls the server every 10 seconds for due reminders. A due reminder appears in a centered `Topmost` window. Clicking **OK** advances it to the next occurrence defined by its cron schedule.
+The client polls the server every 10 seconds for due reminders. A due reminder appears in a centered `Topmost` window. Clicking **OK** completes a one-time reminder or advances a recurring reminder to its next occurrence.
 
 ## Cron schedules
 
-Each reminder uses a standard five-field cron expression and an explicit time zone:
+Reminders can run once at a selected local date and time, or repeat using a standard five-field cron expression and an explicit time zone:
 
 ```text
 minute  hour  day-of-month  month  day-of-week
@@ -25,8 +25,10 @@ Examples:
 - `30 9 * * *` - every day at 09:30;
 - `0 8 * * 1-5` - Monday through Friday at 08:00;
 - `0 12 1 * *` - the first day of every month at 12:00.
+- `0 9 L * *` - the last calendar day of every month at 09:00;
+- `0 9 LW * *` - the last Monday-Friday day of every month at 09:00.
 
-The WPF editor provides guided minute, hourly, daily, weekly, and monthly modes, plus a custom cron mode. It validates the expression and previews the next five runs in the selected time zone.
+The **Repeat this reminder** checkbox switches between the one-time date/time editor and the recurring schedule editor. Recurring reminders provide guided minute, hourly, daily, weekly, and monthly modes, including last-day and last-weekday choices, plus a custom cron mode. A recurrence can continue forever or through an inclusive end date. The editor validates the expression and previews up to five runs in the selected time zone.
 
 ## Running locally
 
@@ -72,7 +74,7 @@ The `/health` endpoint does not require a key. All other endpoints require the `
 
 ## REST API
 
-- `POST /api/reminders` - create a recurring reminder;
+- `POST /api/reminders` - create a one-time or recurring reminder;
 - `PUT /api/reminders/{id}` - update a schedule and recalculate its next occurrence;
 - `DELETE /api/reminders/{id}` - delete a reminder;
 - `GET /api/reminders?from=...&to=...` - expand schedules into occurrences within a time range;

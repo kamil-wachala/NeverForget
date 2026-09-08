@@ -27,7 +27,7 @@
       },
       {
         "v": "17",
-        "name": "Create reminder",
+        "name": "Create recurring reminder",
         "method": "POST",
         "endpoint": "<<baseUrl>>/api/reminders",
         "params": [],
@@ -38,13 +38,34 @@
         },
         "body": {
           "contentType": "application/json",
-          "body": "{\n  \"title\": \"Important meeting\",\n  \"message\": \"Join five minutes early.\",\n  \"cronExpression\": \"30 18 * * 1-5\",\n  \"timeZoneId\": \"Europe/Warsaw\"\n}"
+          "body": "{\n  \"title\": \"Monthly close\",\n  \"message\": \"Complete the month-end checklist.\",\n  \"isRecurring\": true,\n  \"scheduledAt\": null,\n  \"cronExpression\": \"0 9 LW * *\",\n  \"timeZoneId\": \"Europe/Warsaw\",\n  \"endsAt\": \"2031-09-08T23:59:59+02:00\"\n}"
         },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Creates a new reminder. Copy the id from the response into the reminderId collection variable."
+        "description": "Creates a recurring reminder for 09:00 on the last Monday-Friday day of each month. Set endsAt to null to repeat forever. Copy the response id into reminderId."
+      },
+      {
+        "v": "17",
+        "name": "Create one-time reminder",
+        "method": "POST",
+        "endpoint": "<<baseUrl>>/api/reminders",
+        "params": [],
+        "headers": [],
+        "auth": {
+          "authType": "inherit",
+          "authActive": true
+        },
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n  \"title\": \"One-time task\",\n  \"message\": \"This reminder is delivered only once.\",\n  \"isRecurring\": false,\n  \"scheduledAt\": \"2026-09-15T14:30:00+02:00\",\n  \"cronExpression\": null,\n  \"timeZoneId\": null,\n  \"endsAt\": null\n}"
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Creates a reminder that is delivered once. Use a future scheduledAt value."
       },
       {
         "v": "17",
@@ -135,7 +156,7 @@
         },
         "body": {
           "contentType": "application/json",
-          "body": "{\n  \"title\": \"Updated meeting\",\n  \"message\": \"The meeting schedule has changed.\",\n  \"cronExpression\": \"15 9 * * 1-5\",\n  \"timeZoneId\": \"Europe/Warsaw\"\n}"
+          "body": "{\n  \"title\": \"Updated meeting\",\n  \"message\": \"The meeting schedule has changed.\",\n  \"isRecurring\": true,\n  \"scheduledAt\": null,\n  \"cronExpression\": \"15 9 * * 1-5\",\n  \"timeZoneId\": \"Europe/Warsaw\",\n  \"endsAt\": null\n}"
         },
         "preRequestScript": "",
         "testScript": "",

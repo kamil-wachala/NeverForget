@@ -23,7 +23,7 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsSer
             ProblemDetails = new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid cron schedule",
+                Title = "Invalid reminder schedule",
                 Detail = exception.Message
             },
             Exception = exception
