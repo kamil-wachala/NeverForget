@@ -1,0 +1,95 @@
+<UserControl x:Class="NeverForget.Client.CronEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="7" />
+            <Setter Property="Margin" Value="0,4,0,8" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Margin" Value="0,4,0,8" />
+        </Style>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <TextBlock Text="Schedule type" FontWeight="SemiBold" />
+        <ComboBox x:Name="ScheduleTypeComboBox" SelectionChanged="ScheduleInput_Changed">
+            <ComboBoxItem Content="Every few minutes" />
+            <ComboBoxItem Content="Hourly" />
+            <ComboBoxItem Content="Daily" />
+            <ComboBoxItem Content="Weekly" />
+            <ComboBoxItem Content="Monthly" />
+            <ComboBoxItem Content="Custom cron expression" />
+        </ComboBox>
+
+        <StackPanel x:Name="EveryMinutesPanel" Visibility="Collapsed">
+            <TextBlock Text="Interval in minutes (1–59)" FontWeight="SemiBold" />
+            <TextBox x:Name="IntervalMinutesTextBox" Text="15" TextChanged="ScheduleInput_Changed" />
+        </StackPanel>
+
+        <StackPanel x:Name="HourlyPanel" Visibility="Collapsed">
+            <TextBlock Text="Minute of each hour (0–59)" FontWeight="SemiBold" />
+            <TextBox x:Name="HourlyMinuteTextBox" Text="0" TextChanged="ScheduleInput_Changed" />
+        </StackPanel>
+
+        <StackPanel x:Name="DailyPanel" Visibility="Collapsed">
+            <TextBlock Text="Time (HH:mm)" FontWeight="SemiBold" />
+            <TextBox x:Name="DailyTimeTextBox" Text="09:00" TextChanged="ScheduleInput_Changed" />
+        </StackPanel>
+
+        <StackPanel x:Name="WeeklyPanel" Visibility="Collapsed">
+            <TextBlock Text="Days of the week" FontWeight="SemiBold" />
+            <WrapPanel Margin="0,6,0,8">
+                <CheckBox x:Name="MondayCheckBox" Content="Mon" Margin="0,0,10,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+                <CheckBox x:Name="TuesdayCheckBox" Content="Tue" Margin="0,0,10,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+                <CheckBox x:Name="WednesdayCheckBox" Content="Wed" Margin="0,0,10,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+                <CheckBox x:Name="ThursdayCheckBox" Content="Thu" Margin="0,0,10,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+                <CheckBox x:Name="FridayCheckBox" Content="Fri" Margin="0,0,10,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+                <CheckBox x:Name="SaturdayCheckBox" Content="Sat" Margin="0,0,10,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+                <CheckBox x:Name="SundayCheckBox" Content="Sun" Margin="0,0,0,5" Checked="ScheduleInput_Changed" Unchecked="ScheduleInput_Changed" />
+            </WrapPanel>
+            <TextBlock Text="Time (HH:mm)" FontWeight="SemiBold" />
+            <TextBox x:Name="WeeklyTimeTextBox" Text="09:00" TextChanged="ScheduleInput_Changed" />
+        </StackPanel>
+
+        <StackPanel x:Name="MonthlyPanel" Visibility="Collapsed">
+            <TextBlock Text="Day of month (1–31)" FontWeight="SemiBold" />
+            <TextBox x:Name="MonthlyDayTextBox" Text="1" TextChanged="ScheduleInput_Changed" />
+            <TextBlock Text="Time (HH:mm)" FontWeight="SemiBold" />
+            <TextBox x:Name="MonthlyTimeTextBox" Text="09:00" TextChanged="ScheduleInput_Changed" />
+        </StackPanel>
+
+        <StackPanel x:Name="CustomPanel" Visibility="Collapsed">
+            <TextBlock Text="Cron expression" FontWeight="SemiBold" />
+            <TextBox x:Name="CustomCronTextBox" Text="0 9 * * *" TextChanged="ScheduleInput_Changed" />
+            <TextBlock Text="minute  hour  day-of-month  month  day-of-week"
+                       Foreground="#65708A" FontSize="12" Margin="0,-4,0,8" />
+            <TextBlock Text="Examples: */10 * * * * · 30 8 * * 1-5 · 0 12 1 * *"
+                       Foreground="#65708A" FontSize="12" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <TextBlock Text="Time zone" FontWeight="SemiBold" Margin="0,8,0,0" />
+        <ComboBox x:Name="TimeZoneComboBox" DisplayMemberPath="DisplayName"
+                  SelectionChanged="ScheduleInput_Changed" MaxDropDownHeight="260" />
+
+        <Border Background="#F4F6FA" CornerRadius="7" Padding="10" Margin="0,6,0,8">
+            <StackPanel>
+                <TextBlock Text="Cron expression" Foreground="#65708A" FontSize="12" />
+                <TextBlock x:Name="CronExpressionTextBlock" FontFamily="Consolas" FontSize="15"
+                           FontWeight="SemiBold" Margin="0,2,0,0" />
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="ValidationTextBlock" Foreground="#B42318" TextWrapping="Wrap" />
+
+        <TextBlock Text="Next five runs" FontWeight="SemiBold" Margin="0,8,0,3" />
+        <ItemsControl x:Name="NextRunsItemsControl">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" Foreground="#65708A" Margin="0,1" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

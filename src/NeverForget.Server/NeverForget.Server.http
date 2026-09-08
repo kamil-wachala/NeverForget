@@ -13,7 +13,8 @@ X-Api-Key: {{ApiKey}}
 {
   "title": "Important meeting",
   "message": "Join five minutes early.",
-  "scheduledAt": "2026-09-07T18:30:00+02:00"
+  "cronExpression": "30 18 * * 1-5",
+  "timeZoneId": "Europe/Warsaw"
 }
 
 ###

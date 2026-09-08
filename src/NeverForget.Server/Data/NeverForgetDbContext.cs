@@ -13,6 +13,8 @@ public sealed class NeverForgetDbContext(DbContextOptions<NeverForgetDbContext> 
         reminder.HasKey(x => x.Id);
         reminder.Property(x => x.Title).HasMaxLength(120).IsRequired();
         reminder.Property(x => x.Message).HasMaxLength(2000).IsRequired();
-        reminder.HasIndex(x => new { x.IsAcknowledged, x.ScheduledAtUtc });
+        reminder.Property(x => x.CronExpression).HasMaxLength(200).IsRequired();
+        reminder.Property(x => x.TimeZoneId).HasMaxLength(100).IsRequired();
+        reminder.HasIndex(x => x.NextOccurrenceUtc);
     }
 }

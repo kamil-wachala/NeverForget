@@ -10,8 +10,8 @@ namespace NeverForget.Server.Controllers;
 public sealed class RemindersController(IReminderService reminderService) : ControllerBase
 {
     [HttpGet]
-    [ProducesResponseType<IReadOnlyList<ReminderDto>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ReminderDto>>> GetBetween(
+    [ProducesResponseType<IReadOnlyList<ReminderOccurrenceDto>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ReminderOccurrenceDto>>> GetBetween(
         [FromQuery] ReminderRangeRequest range,
         CancellationToken cancellationToken)
     {
@@ -32,8 +32,8 @@ public sealed class RemindersController(IReminderService reminderService) : Cont
     }
 
     [HttpGet("due")]
-    [ProducesResponseType<IReadOnlyList<ReminderDto>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ReminderDto>>> GetDue(CancellationToken cancellationToken)
+    [ProducesResponseType<IReadOnlyList<ReminderOccurrenceDto>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ReminderOccurrenceDto>>> GetDue(CancellationToken cancellationToken)
     {
         var reminders = await reminderService.GetDueAsync(cancellationToken);
         return Ok(reminders);

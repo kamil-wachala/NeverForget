@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NeverForget.Contracts;
+using NeverForget.Scheduling;
 using NeverForget.Server.Data;
 
 namespace NeverForget.Server.Services;
@@ -8,20 +9,27 @@ public sealed class ReminderService(
     NeverForgetDbContext dbContext,
     TimeProvider timeProvider) : IReminderService
 {
-    public async Task<IReadOnlyList<ReminderDto>> GetBetweenAsync(
+    public async Task<IReadOnlyList<ReminderOccurrenceDto>> GetBetweenAsync(
         DateTimeOffset from,
         DateTimeOffset to,
         CancellationToken cancellationToken)
     {
-        var fromUtc = from.UtcDateTime;
-        var toUtc = to.UtcDateTime;
-
-        return await dbContext.Reminders
+        var reminders = await dbContext.Reminders
             .AsNoTracking()
-            .Where(x => x.ScheduledAtUtc >= fromUtc && x.ScheduledAtUtc <= toUtc)
-            .OrderBy(x => x.ScheduledAtUtc)
-            .Select(x => ToDto(x))
             .ToListAsync(cancellationToken);
+
+        return reminders
+            .SelectMany(reminder => CronSchedule.GetOccurrences(
+                    reminder.CronExpression,
+                    reminder.TimeZoneId,
+                    reminder.CreatedAtUtc > from.UtcDateTime
+                        ? AsUtcOffset(reminder.CreatedAtUtc)
+                        : from,
+                    to)
+                .Select(occurrence => new ReminderOccurrenceDto(ToDto(reminder), occurrence)))
+            .OrderBy(x => x.OccursAt)
+            .Take(CronSchedule.MaximumOccurrences)
+            .ToList();
     }
 
     public async Task<ReminderDto?> GetAsync(Guid id, CancellationToken cancellationToken)
@@ -33,36 +41,44 @@ public sealed class ReminderService(
         return reminder is null ? null : ToDto(reminder);
     }
 
-    public async Task<IReadOnlyList<ReminderDto>> GetDueAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ReminderOccurrenceDto>> GetDueAsync(CancellationToken cancellationToken)
     {
         var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
-
-        return await dbContext.Reminders
+        var reminders = await dbContext.Reminders
             .AsNoTracking()
-            .Where(x => !x.IsAcknowledged && x.ScheduledAtUtc <= nowUtc)
-            .OrderBy(x => x.ScheduledAtUtc)
-            .Select(x => ToDto(x))
+            .Where(x => x.NextOccurrenceUtc <= nowUtc)
+            .OrderBy(x => x.NextOccurrenceUtc)
             .ToListAsync(cancellationToken);
+
+        return reminders
+            .Select(x => new ReminderOccurrenceDto(ToDto(x), AsUtcOffset(x.NextOccurrenceUtc)))
+            .ToList();
     }
 
     public async Task<ReminderDto> CreateAsync(
         CreateReminderRequest request,
         CancellationToken cancellationToken)
     {
-        var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
+        ValidateSchedule(request.CronExpression, request.TimeZoneId);
+
+        var now = timeProvider.GetUtcNow();
         var reminder = new Reminder
         {
             Id = Guid.NewGuid(),
             Title = request.Title.Trim(),
             Message = request.Message.Trim(),
-            ScheduledAtUtc = request.ScheduledAt.UtcDateTime,
-            CreatedAtUtc = nowUtc,
-            UpdatedAtUtc = nowUtc
+            CronExpression = request.CronExpression.Trim(),
+            TimeZoneId = request.TimeZoneId.Trim(),
+            NextOccurrenceUtc = CronSchedule.GetNextOccurrence(
+                request.CronExpression,
+                request.TimeZoneId,
+                now).UtcDateTime,
+            CreatedAtUtc = now.UtcDateTime,
+            UpdatedAtUtc = now.UtcDateTime
         };
 
         dbContext.Reminders.Add(reminder);
         await dbContext.SaveChangesAsync(cancellationToken);
-
         return ToDto(reminder);
     }
 
@@ -71,6 +87,8 @@ public sealed class ReminderService(
         UpdateReminderRequest request,
         CancellationToken cancellationToken)
     {
+        ValidateSchedule(request.CronExpression, request.TimeZoneId);
+
         var reminder = await dbContext.Reminders
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (reminder is null)
@@ -78,11 +96,16 @@ public sealed class ReminderService(
             return null;
         }
 
+        var now = timeProvider.GetUtcNow();
         reminder.Title = request.Title.Trim();
         reminder.Message = request.Message.Trim();
-        reminder.ScheduledAtUtc = request.ScheduledAt.UtcDateTime;
-        reminder.IsAcknowledged = false;
-        reminder.UpdatedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+        reminder.CronExpression = request.CronExpression.Trim();
+        reminder.TimeZoneId = request.TimeZoneId.Trim();
+        reminder.NextOccurrenceUtc = CronSchedule.GetNextOccurrence(
+            request.CronExpression,
+            request.TimeZoneId,
+            now).UtcDateTime;
+        reminder.UpdatedAtUtc = now.UtcDateTime;
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return ToDto(reminder);
@@ -97,8 +120,12 @@ public sealed class ReminderService(
             return false;
         }
 
-        reminder.IsAcknowledged = true;
-        reminder.UpdatedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+        var now = timeProvider.GetUtcNow();
+        reminder.NextOccurrenceUtc = CronSchedule.GetNextOccurrence(
+            reminder.CronExpression,
+            reminder.TimeZoneId,
+            now).UtcDateTime;
+        reminder.UpdatedAtUtc = now.UtcDateTime;
         await dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -117,12 +144,24 @@ public sealed class ReminderService(
         return true;
     }
 
+    private static void ValidateSchedule(string cronExpression, string timeZoneId)
+    {
+        if (!CronSchedule.TryValidate(cronExpression, timeZoneId, out var error))
+        {
+            throw new InvalidCronScheduleException(error!);
+        }
+    }
+
     private static ReminderDto ToDto(Reminder reminder) => new(
         reminder.Id,
         reminder.Title,
         reminder.Message,
-        new DateTimeOffset(DateTime.SpecifyKind(reminder.ScheduledAtUtc, DateTimeKind.Utc)),
-        reminder.IsAcknowledged,
-        new DateTimeOffset(DateTime.SpecifyKind(reminder.CreatedAtUtc, DateTimeKind.Utc)),
-        new DateTimeOffset(DateTime.SpecifyKind(reminder.UpdatedAtUtc, DateTimeKind.Utc)));
+        reminder.CronExpression,
+        reminder.TimeZoneId,
+        AsUtcOffset(reminder.NextOccurrenceUtc),
+        AsUtcOffset(reminder.CreatedAtUtc),
+        AsUtcOffset(reminder.UpdatedAtUtc));
+
+    private static DateTimeOffset AsUtcOffset(DateTime value) =>
+        new(DateTime.SpecifyKind(value, DateTimeKind.Utc));
 }

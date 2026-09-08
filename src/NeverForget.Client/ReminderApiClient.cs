@@ -22,17 +22,17 @@ public sealed class ReminderApiClient : IDisposable
         }
     }
 
-    public async Task<IReadOnlyList<ReminderDto>> GetBetweenAsync(
+    public async Task<IReadOnlyList<ReminderOccurrenceDto>> GetBetweenAsync(
         DateTimeOffset from,
         DateTimeOffset to,
         CancellationToken cancellationToken = default)
     {
         var path = $"api/reminders?from={Uri.EscapeDataString(from.ToString("O"))}&to={Uri.EscapeDataString(to.ToString("O"))}";
-        return await _httpClient.GetFromJsonAsync<List<ReminderDto>>(path, cancellationToken) ?? [];
+        return await _httpClient.GetFromJsonAsync<List<ReminderOccurrenceDto>>(path, cancellationToken) ?? [];
     }
 
-    public async Task<IReadOnlyList<ReminderDto>> GetDueAsync(CancellationToken cancellationToken = default) =>
-        await _httpClient.GetFromJsonAsync<List<ReminderDto>>("api/reminders/due", cancellationToken) ?? [];
+    public async Task<IReadOnlyList<ReminderOccurrenceDto>> GetDueAsync(CancellationToken cancellationToken = default) =>
+        await _httpClient.GetFromJsonAsync<List<ReminderOccurrenceDto>>("api/reminders/due", cancellationToken) ?? [];
 
     public async Task<ReminderDto> CreateAsync(
         CreateReminderRequest request,

@@ -7,12 +7,14 @@ public partial class ReminderPopup : Window
 {
     public bool WasAcknowledged { get; private set; }
 
-    public ReminderPopup(ReminderDto reminder)
+    public ReminderPopup(ReminderOccurrenceDto occurrence)
     {
         InitializeComponent();
+        var reminder = occurrence.Reminder;
         TitleTextBlock.Text = reminder.Title;
         MessageTextBlock.Text = reminder.Message;
-        ScheduledAtTextBlock.Text = $"Scheduled for: {reminder.ScheduledAt.LocalDateTime:f}";
+        ScheduledAtTextBlock.Text =
+            $"Scheduled for: {occurrence.OccursAt.LocalDateTime:f}\n{reminder.CronExpression} · {reminder.TimeZoneId}";
     }
 
     private void OkButton_Click(object sender, RoutedEventArgs e)

@@ -2,12 +2,31 @@
 
 NeverForget is a reminder application built using a client-server architecture:
 
-- `NeverForget.Server` — ASP.NET Core Web API (.NET 8), using SQLite locally and PostgreSQL when hosted;
-- `NeverForget.Client` — WPF application (.NET 8/Windows);
-- `NeverForget.Contracts` — shared REST contracts;
-- `NeverForget.Server.Tests` — API integration tests.
+- `NeverForget.Server` - ASP.NET Core Web API (.NET 8), using SQLite locally and PostgreSQL when hosted;
+- `NeverForget.Client` - WPF application (.NET 8/Windows);
+- `NeverForget.Contracts` - shared REST contracts;
+- `NeverForget.Scheduling` - shared cron parsing and occurrence calculation;
+- `NeverForget.Server.Tests` - API integration tests.
 
-The client polls the server every 10 seconds for due reminders. A due reminder appears in a centered `Topmost` window. Clicking **OK** acknowledges it on the server so it will not be displayed again.
+The client polls the server every 10 seconds for due reminders. A due reminder appears in a centered `Topmost` window. Clicking **OK** advances it to the next occurrence defined by its cron schedule.
+
+## Cron schedules
+
+Each reminder uses a standard five-field cron expression and an explicit time zone:
+
+```text
+minute  hour  day-of-month  month  day-of-week
+```
+
+Examples:
+
+- `*/10 * * * *` - every 10 minutes;
+- `15 * * * *` - hourly at minute 15;
+- `30 9 * * *` - every day at 09:30;
+- `0 8 * * 1-5` - Monday through Friday at 08:00;
+- `0 12 1 * *` - the first day of every month at 12:00.
+
+The WPF editor provides guided minute, hourly, daily, weekly, and monthly modes, plus a custom cron mode. It validates the expression and previews the next five runs in the selected time zone.
 
 ## Running locally
 
@@ -24,6 +43,8 @@ dotnet run --project src/NeverForget.Client
 ```
 
 Swagger is available at `http://localhost:5081/swagger`. The `neverforget.db` SQLite database is created automatically in the server's working directory.
+
+When an existing timestamp-based SQLite database is opened for the first time, it is upgraded in place. Each legacy reminder becomes a daily UTC cron schedule at its original hour and minute, and no reminder rows are deleted.
 
 ## Client configuration
 
@@ -43,21 +64,23 @@ The server address and API key can also be supplied through the `NEVERFORGET_API
 
 The server uses SQLite when no additional configuration is provided. When hosting it, set:
 
-- `ConnectionStrings__Postgres` — the PostgreSQL connection string;
-- `ApiKey` — a long, randomly generated secret; configure the client with the same value;
+- `ConnectionStrings__Postgres` - the PostgreSQL connection string;
+- `ApiKey` - a long, randomly generated secret; configure the client with the same value;
 - `ASPNETCORE_ENVIRONMENT=Production`.
 
 The `/health` endpoint does not require a key. All other endpoints require the `X-Api-Key` header when `ApiKey` is configured on the server.
 
 ## REST API
 
-- `POST /api/reminders` — create a reminder;
-- `PUT /api/reminders/{id}` — update and rearm a reminder;
-- `DELETE /api/reminders/{id}` — delete a reminder;
-- `GET /api/reminders?from=...&to=...` — list reminders within a time range;
-- `GET /api/reminders/due` — list unacknowledged reminders that are due;
-- `POST /api/reminders/{id}/acknowledge` — acknowledge a reminder;
-- `GET /health` — health check.
+- `POST /api/reminders` - create a recurring reminder;
+- `PUT /api/reminders/{id}` - update a schedule and recalculate its next occurrence;
+- `DELETE /api/reminders/{id}` - delete a reminder;
+- `GET /api/reminders?from=...&to=...` - expand schedules into occurrences within a time range;
+- `GET /api/reminders/due` - list reminders whose next occurrence is due;
+- `POST /api/reminders/{id}/acknowledge` - advance a reminder to its next future occurrence;
+- `GET /health` - health check.
+
+Date-range responses are limited to the first 1,000 occurrences, ordered chronologically.
 
 ## Tests and client publishing
 
@@ -70,7 +93,7 @@ The WPF application must remain running to display reminder popups. REST polling
 
 ## Hoppscotch collection
 
-Import `http/NeverForget.hoppscotch.json` using **Collections → Import → Import from Hoppscotch**. The collection contains a sample request for every endpoint and defines `baseUrl`, `apiKey`, and `reminderId` as collection variables. After creating a reminder, copy its returned `id` into `reminderId` before running the get, update, acknowledge, or delete requests.
+Import `http/NeverForget.hoppscotch.json` using **Collections > Import > Import from Hoppscotch**. The collection contains a sample request for every endpoint and defines `baseUrl`, `apiKey`, and `reminderId` as collection variables. After creating a reminder, copy its returned `id` into `reminderId` before running the get, update, acknowledge, or delete requests.
 
 ## Free MVP hosting: Render + Neon
 

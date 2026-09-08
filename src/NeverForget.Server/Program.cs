@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IReminderService, ReminderService>();
 
@@ -32,6 +34,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandler();
 app.UseMiddleware<ApiKeyMiddleware>();
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utcNow = DateTimeOffset.UtcNow }));
@@ -39,7 +42,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", utcNow = DateTimeOff
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<NeverForgetDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    await DatabaseSchemaInitializer.InitializeAsync(dbContext);
 }
 
 app.Run();

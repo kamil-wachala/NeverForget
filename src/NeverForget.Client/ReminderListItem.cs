@@ -2,11 +2,13 @@ using NeverForget.Contracts;
 
 namespace NeverForget.Client;
 
-public sealed record ReminderListItem(ReminderDto Reminder)
+public sealed record ReminderListItem(ReminderOccurrenceDto Occurrence)
 {
+    public ReminderDto Reminder => Occurrence.Reminder;
     public Guid Id => Reminder.Id;
     public string Title => Reminder.Title;
     public string Message => Reminder.Message;
-    public DateTime ScheduledAtLocal => Reminder.ScheduledAt.LocalDateTime;
-    public string Status => Reminder.IsAcknowledged ? "Acknowledged" : "Pending";
+    public string CronExpression => Reminder.CronExpression;
+    public string TimeZoneId => Reminder.TimeZoneId;
+    public DateTime OccursAtLocal => Occurrence.OccursAt.LocalDateTime;
 }

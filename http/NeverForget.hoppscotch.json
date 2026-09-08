@@ -38,7 +38,7 @@
         },
         "body": {
           "contentType": "application/json",
-          "body": "{\n  \"title\": \"Important meeting\",\n  \"message\": \"Join five minutes early.\",\n  \"scheduledAt\": \"2026-09-09T18:30:00+02:00\"\n}"
+          "body": "{\n  \"title\": \"Important meeting\",\n  \"message\": \"Join five minutes early.\",\n  \"cronExpression\": \"30 18 * * 1-5\",\n  \"timeZoneId\": \"Europe/Warsaw\"\n}"
         },
         "preRequestScript": "",
         "testScript": "",
@@ -78,7 +78,7 @@
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Returns reminders scheduled within an inclusive date and time range."
+        "description": "Expands recurring schedules and returns occurrences within an inclusive date and time range."
       },
       {
         "v": "17",
@@ -120,7 +120,7 @@
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Returns unacknowledged reminders whose scheduled time has passed."
+        "description": "Returns reminders whose next cron occurrence is due."
       },
       {
         "v": "17",
@@ -135,7 +135,7 @@
         },
         "body": {
           "contentType": "application/json",
-          "body": "{\n  \"title\": \"Updated meeting\",\n  \"message\": \"The meeting time has changed.\",\n  \"scheduledAt\": \"2026-09-10T09:15:00+02:00\"\n}"
+          "body": "{\n  \"title\": \"Updated meeting\",\n  \"message\": \"The meeting schedule has changed.\",\n  \"cronExpression\": \"15 9 * * 1-5\",\n  \"timeZoneId\": \"Europe/Warsaw\"\n}"
         },
         "preRequestScript": "",
         "testScript": "",

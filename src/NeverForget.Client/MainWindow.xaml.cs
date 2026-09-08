@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
@@ -92,13 +91,13 @@ public partial class MainWindow : Window
                 Reminders.Add(new ReminderListItem(reminder));
             }
 
-            StatusTextBlock.Text = $"Loaded {Reminders.Count} reminders. Last updated: {DateTime.Now:T}";
+            StatusTextBlock.Text = $"Loaded {Reminders.Count} occurrences. Last updated: {DateTime.Now:T}";
         });
     }
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!TryReadEditor(out var title, out var message, out var scheduledAt))
+        if (!TryReadEditor(out var title, out var message, out var cronExpression, out var timeZoneId))
         {
             return;
         }
@@ -107,12 +106,12 @@ public partial class MainWindow : Window
         {
             if (_editedReminderId is Guid id)
             {
-                await GetApiClient().UpdateAsync(id, new UpdateReminderRequest(title, message, scheduledAt));
+                await GetApiClient().UpdateAsync(id, new UpdateReminderRequest(title, message, cronExpression, timeZoneId));
                 StatusTextBlock.Text = "The reminder was updated.";
             }
             else
             {
-                await GetApiClient().CreateAsync(new CreateReminderRequest(title, message, scheduledAt));
+                await GetApiClient().CreateAsync(new CreateReminderRequest(title, message, cronExpression, timeZoneId));
                 StatusTextBlock.Text = "The reminder was added.";
             }
 
@@ -158,8 +157,7 @@ public partial class MainWindow : Window
         DeleteButton.Visibility = Visibility.Visible;
         TitleTextBox.Text = selected.Title;
         MessageTextBox.Text = selected.Message;
-        ScheduledDatePicker.SelectedDate = selected.ScheduledAtLocal.Date;
-        ScheduledTimeTextBox.Text = selected.ScheduledAtLocal.ToString("HH:mm", CultureInfo.InvariantCulture);
+        ScheduleEditor.SetSchedule(selected.CronExpression, selected.TimeZoneId);
     }
 
     private async void PollingTimer_Tick(object? sender, EventArgs e) => await PollDueRemindersAsync();
@@ -175,24 +173,29 @@ public partial class MainWindow : Window
         try
         {
             var dueReminders = await GetApiClient().GetDueAsync();
-            foreach (var reminder in dueReminders.Where(x => _displayedReminderIds.Add(x.Id)))
+            foreach (var occurrence in dueReminders.Where(x => _displayedReminderIds.Add(x.Reminder.Id)))
             {
-                var popup = new ReminderPopup(reminder) { Owner = this };
+                var popup = new ReminderPopup(occurrence) { Owner = this };
                 popup.ShowDialog();
 
                 if (popup.WasAcknowledged)
                 {
-                    await GetApiClient().AcknowledgeAsync(reminder.Id);
+                    await GetApiClient().AcknowledgeAsync(occurrence.Reminder.Id);
+                    _displayedReminderIds.Remove(occurrence.Reminder.Id);
                 }
                 else
                 {
-                    _displayedReminderIds.Remove(reminder.Id);
+                    _displayedReminderIds.Remove(occurrence.Reminder.Id);
                 }
             }
 
             if (dueReminders.Count > 0)
             {
                 await RefreshRemindersAsync();
+            }
+            else
+            {
+                StatusTextBlock.Text = $"Connected. Last checked: {DateTime.Now:T}";
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or ArgumentException)
@@ -205,11 +208,16 @@ public partial class MainWindow : Window
         }
     }
 
-    private bool TryReadEditor(out string title, out string message, out DateTimeOffset scheduledAt)
+    private bool TryReadEditor(
+        out string title,
+        out string message,
+        out string cronExpression,
+        out string timeZoneId)
     {
         title = TitleTextBox.Text.Trim();
         message = MessageTextBox.Text.Trim();
-        scheduledAt = default;
+        cronExpression = string.Empty;
+        timeZoneId = string.Empty;
 
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(message))
         {
@@ -217,15 +225,12 @@ public partial class MainWindow : Window
             return false;
         }
 
-        if (ScheduledDatePicker.SelectedDate is not DateTime date
-            || !TimeSpan.TryParseExact(ScheduledTimeTextBox.Text.Trim(), ["h\\:mm", "hh\\:mm"],
-                CultureInfo.InvariantCulture, out var time))
+        if (!ScheduleEditor.TryGetSchedule(out cronExpression, out timeZoneId, out var scheduleError))
         {
-            ShowError("Select a date and enter the time in HH:mm format.");
+            ShowError(scheduleError ?? "Enter a valid schedule.");
             return false;
         }
 
-        scheduledAt = ToLocalDateTimeOffset(date.Date.Add(time));
         return true;
     }
 
@@ -237,8 +242,7 @@ public partial class MainWindow : Window
         DeleteButton.Visibility = Visibility.Collapsed;
         TitleTextBox.Clear();
         MessageTextBox.Clear();
-        ScheduledDatePicker.SelectedDate = DateTime.Today;
-        ScheduledTimeTextBox.Text = DateTime.Now.AddMinutes(5).ToString("HH:mm", CultureInfo.InvariantCulture);
+        ScheduleEditor.Reset();
     }
 
     private async Task RunUiActionAsync(Func<Task> action)
