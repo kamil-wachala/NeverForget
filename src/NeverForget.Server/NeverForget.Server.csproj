@@ -7,14 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.24" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.75.0.4206" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NeverForget.Contracts\NeverForget.Contracts.csproj" />
-    <ProjectReference Include="..\NeverForget.Scheduling\NeverForget.Scheduling.csproj" />
   </ItemGroup>
 
 </Project>

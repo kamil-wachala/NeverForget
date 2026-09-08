@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NeverForget.Contracts\NeverForget.Contracts.csproj" />
-    <ProjectReference Include="..\NeverForget.Scheduling\NeverForget.Scheduling.csproj" />
   </ItemGroup>
 
   <ItemGroup>

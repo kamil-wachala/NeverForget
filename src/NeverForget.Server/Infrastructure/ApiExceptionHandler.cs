@@ -1,3 +1,4 @@
+using Google;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using NeverForget.Server.Services;
@@ -11,21 +12,39 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsSer
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (exception is not InvalidCronScheduleException)
+        var problem = exception switch
+        {
+            CalendarEventValidationException => new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid calendar event",
+                Detail = exception.Message
+            },
+            GoogleCalendarConfigurationException => new ProblemDetails
+            {
+                Status = StatusCodes.Status503ServiceUnavailable,
+                Title = "Google Calendar is not configured",
+                Detail = exception.Message
+            },
+            GoogleApiException => new ProblemDetails
+            {
+                Status = StatusCodes.Status502BadGateway,
+                Title = "Google Calendar request failed",
+                Detail = exception.Message
+            },
+            _ => null
+        };
+
+        if (problem is null)
         {
             return false;
         }
 
-        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+        httpContext.Response.StatusCode = problem.Status!.Value;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid reminder schedule",
-                Detail = exception.Message
-            },
+            ProblemDetails = problem,
             Exception = exception
         });
     }

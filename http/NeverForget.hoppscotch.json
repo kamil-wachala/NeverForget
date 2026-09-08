@@ -1,7 +1,7 @@
 [
   {
     "v": 12,
-    "name": "NeverForget",
+    "name": "NeverForget Google Calendar",
     "folders": [],
     "requests": [
       {
@@ -11,14 +11,8 @@
         "endpoint": "<<baseUrl>>/health",
         "params": [],
         "headers": [],
-        "auth": {
-          "authType": "none",
-          "authActive": false
-        },
-        "body": {
-          "contentType": null,
-          "body": null
-        },
+        "auth": { "authType": "none", "authActive": false },
+        "body": { "contentType": null, "body": null },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
@@ -27,184 +21,109 @@
       },
       {
         "v": "17",
-        "name": "Create recurring reminder",
-        "method": "POST",
-        "endpoint": "<<baseUrl>>/api/reminders",
-        "params": [],
-        "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
-        "body": {
-          "contentType": "application/json",
-          "body": "{\n  \"title\": \"Monthly close\",\n  \"message\": \"Complete the month-end checklist.\",\n  \"isRecurring\": true,\n  \"scheduledAt\": null,\n  \"cronExpression\": \"0 9 LW * *\",\n  \"timeZoneId\": \"Europe/Warsaw\",\n  \"endsAt\": \"2031-09-08T23:59:59+02:00\"\n}"
-        },
-        "preRequestScript": "",
-        "testScript": "",
-        "requestVariables": [],
-        "responses": {},
-        "description": "Creates a recurring reminder for 09:00 on the last Monday-Friday day of each month. Set endsAt to null to repeat forever. Copy the response id into reminderId."
-      },
-      {
-        "v": "17",
-        "name": "Create one-time reminder",
-        "method": "POST",
-        "endpoint": "<<baseUrl>>/api/reminders",
-        "params": [],
-        "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
-        "body": {
-          "contentType": "application/json",
-          "body": "{\n  \"title\": \"One-time task\",\n  \"message\": \"This reminder is delivered only once.\",\n  \"isRecurring\": false,\n  \"scheduledAt\": \"2026-09-15T14:30:00+02:00\",\n  \"cronExpression\": null,\n  \"timeZoneId\": null,\n  \"endsAt\": null\n}"
-        },
-        "preRequestScript": "",
-        "testScript": "",
-        "requestVariables": [],
-        "responses": {},
-        "description": "Creates a reminder that is delivered once. Use a future scheduledAt value."
-      },
-      {
-        "v": "17",
-        "name": "List reminders by date range",
+        "name": "List configured calendars",
         "method": "GET",
-        "endpoint": "<<baseUrl>>/api/reminders",
+        "endpoint": "<<baseUrl>>/api/calendars",
+        "params": [],
+        "headers": [],
+        "auth": { "authType": "inherit", "authActive": true },
+        "body": { "contentType": null, "body": null },
+        "preRequestScript": "",
+        "testScript": "",
+        "requestVariables": [],
+        "responses": {},
+        "description": "Returns all Google calendars configured on the server."
+      },
+      {
+        "v": "17",
+        "name": "List events by date range",
+        "method": "GET",
+        "endpoint": "<<baseUrl>>/api/calendar-events",
         "params": [
-          {
-            "key": "from",
-            "value": "2026-09-01T00:00:00+02:00",
-            "active": true,
-            "description": "Inclusive start of the requested date range."
-          },
-          {
-            "key": "to",
-            "value": "2026-09-30T23:59:59+02:00",
-            "active": true,
-            "description": "Inclusive end of the requested date range."
-          }
+          { "key": "from", "value": "2026-09-01T00:00:00+02:00", "active": true, "description": "Range start." },
+          { "key": "to", "value": "2026-09-30T23:59:59+02:00", "active": true, "description": "Range end." },
+          { "key": "calendarIds", "value": "<<calendarId>>", "active": true, "description": "Repeat this parameter to include more calendars." }
         ],
         "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
-        "body": {
-          "contentType": null,
-          "body": null
-        },
+        "auth": { "authType": "inherit", "authActive": true },
+        "body": { "contentType": null, "body": null },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Expands recurring schedules and returns occurrences within an inclusive date and time range."
+        "description": "Returns expanded event instances from the selected calendars."
       },
       {
         "v": "17",
-        "name": "Get reminder by id",
+        "name": "Get event by id",
         "method": "GET",
-        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>",
-        "params": [],
+        "endpoint": "<<baseUrl>>/api/calendar-events/<<eventId>>",
+        "params": [
+          { "key": "calendarId", "value": "<<calendarId>>", "active": true, "description": "Calendar containing the event." }
+        ],
         "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
-        "body": {
-          "contentType": null,
-          "body": null
-        },
+        "auth": { "authType": "inherit", "authActive": true },
+        "body": { "contentType": null, "body": null },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Returns a single reminder using the reminderId collection variable."
+        "description": "Returns one Google Calendar event."
       },
       {
         "v": "17",
-        "name": "List due reminders",
+        "name": "List due notifications",
         "method": "GET",
-        "endpoint": "<<baseUrl>>/api/reminders/due",
-        "params": [],
+        "endpoint": "<<baseUrl>>/api/calendar-events/notifications",
+        "params": [
+          { "key": "from", "value": "2026-09-08T08:49:00+02:00", "active": true, "description": "Notification window start." },
+          { "key": "to", "value": "2026-09-08T08:51:00+02:00", "active": true, "description": "Notification window end." },
+          { "key": "calendarIds", "value": "<<calendarId>>", "active": true, "description": "Calendar to inspect." }
+        ],
         "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
-        "body": {
-          "contentType": null,
-          "body": null
-        },
+        "auth": { "authType": "inherit", "authActive": true },
+        "body": { "contentType": null, "body": null },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Returns reminders whose next cron occurrence is due."
+        "description": "Returns events whose configured reminder time falls inside the requested window."
       },
       {
         "v": "17",
-        "name": "Update reminder",
-        "method": "PUT",
-        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>",
+        "name": "Create event",
+        "method": "POST",
+        "endpoint": "<<baseUrl>>/api/calendar-events",
         "params": [],
         "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
+        "auth": { "authType": "inherit", "authActive": true },
         "body": {
           "contentType": "application/json",
-          "body": "{\n  \"title\": \"Updated meeting\",\n  \"message\": \"The meeting schedule has changed.\",\n  \"isRecurring\": true,\n  \"scheduledAt\": null,\n  \"cronExpression\": \"15 9 * * 1-5\",\n  \"timeZoneId\": \"Europe/Warsaw\",\n  \"endsAt\": null\n}"
+          "body": "{\n  \"calendarId\": \"<<calendarId>>\",\n  \"title\": \"Architecture review\",\n  \"description\": \"Review the Google Calendar integration.\",\n  \"location\": \"Online\",\n  \"startsAt\": \"2026-09-15T09:00:00+02:00\",\n  \"endsAt\": \"2026-09-15T10:00:00+02:00\",\n  \"isAllDay\": false,\n  \"notificationMinutesBefore\": 10\n}"
         },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Updates and rearms the reminder identified by reminderId."
+        "description": "Creates an event and explicit popup reminder in a writable Google calendar. Copy the response id into eventId."
       },
       {
         "v": "17",
-        "name": "Acknowledge reminder",
-        "method": "POST",
-        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>/acknowledge",
+        "name": "Update event",
+        "method": "PUT",
+        "endpoint": "<<baseUrl>>/api/calendar-events/<<eventId>>",
         "params": [],
         "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
+        "auth": { "authType": "inherit", "authActive": true },
         "body": {
-          "contentType": null,
-          "body": null
+          "contentType": "application/json",
+          "body": "{\n  \"calendarId\": \"<<calendarId>>\",\n  \"title\": \"Updated architecture review\",\n  \"description\": \"The time has changed.\",\n  \"location\": \"Meeting room\",\n  \"startsAt\": \"2026-09-15T10:00:00+02:00\",\n  \"endsAt\": \"2026-09-15T11:30:00+02:00\",\n  \"isAllDay\": false,\n  \"notificationMinutesBefore\": 15\n}"
         },
         "preRequestScript": "",
         "testScript": "",
         "requestVariables": [],
         "responses": {},
-        "description": "Acknowledges the reminder identified by reminderId."
-      },
-      {
-        "v": "17",
-        "name": "Delete reminder",
-        "method": "DELETE",
-        "endpoint": "<<baseUrl>>/api/reminders/<<reminderId>>",
-        "params": [],
-        "headers": [],
-        "auth": {
-          "authType": "inherit",
-          "authActive": true
-        },
-        "body": {
-          "contentType": null,
-          "body": null
-        },
-        "preRequestScript": "",
-        "testScript": "",
-        "requestVariables": [],
-        "responses": {},
-        "description": "Deletes the reminder identified by reminderId."
+        "description": "Reads and updates the existing Google event so fields outside this editor are preserved."
       }
     ],
     "auth": {
@@ -215,34 +134,15 @@
       "addTo": "HEADERS"
     },
     "headers": [
-      {
-        "key": "Accept",
-        "value": "application/json",
-        "active": true,
-        "description": "Request JSON responses."
-      }
+      { "key": "Accept", "value": "application/json", "active": true, "description": "Request JSON responses." }
     ],
     "variables": [
-      {
-        "key": "baseUrl",
-        "initialValue": "http://localhost:5081",
-        "currentValue": "http://localhost:5081",
-        "secret": false
-      },
-      {
-        "key": "apiKey",
-        "initialValue": "",
-        "currentValue": "",
-        "secret": true
-      },
-      {
-        "key": "reminderId",
-        "initialValue": "00000000-0000-0000-0000-000000000000",
-        "currentValue": "00000000-0000-0000-0000-000000000000",
-        "secret": false
-      }
+      { "key": "baseUrl", "initialValue": "http://localhost:5081", "currentValue": "http://localhost:5081", "secret": false },
+      { "key": "apiKey", "initialValue": "", "currentValue": "", "secret": true },
+      { "key": "calendarId", "initialValue": "your-calendar-id@group.calendar.google.com", "currentValue": "your-calendar-id@group.calendar.google.com", "secret": false },
+      { "key": "eventId", "initialValue": "replace-with-google-event-id", "currentValue": "replace-with-google-event-id", "secret": false }
     ],
-    "description": "Sample requests for every NeverForget REST API endpoint.",
+    "description": "Sample requests for every NeverForget Google Calendar endpoint.",
     "preRequestScript": "",
     "testScript": ""
   }

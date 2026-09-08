@@ -1,30 +1,58 @@
 @NeverForget_Server = http://localhost:5081
-@ApiKey = change-me
+@CalendarId = your-calendar-id@group.calendar.google.com
+@EventId = replace-with-google-event-id
 
 GET {{NeverForget_Server}}/health
 Accept: application/json
 
 ###
 
-POST {{NeverForget_Server}}/api/reminders
+GET {{NeverForget_Server}}/api/calendars
+Accept: application/json
+
+###
+
+GET {{NeverForget_Server}}/api/calendar-events?from=2026-09-01T00:00:00%2B02:00&to=2026-09-30T23:59:59%2B02:00&calendarIds={{CalendarId}}
+Accept: application/json
+
+###
+
+GET {{NeverForget_Server}}/api/calendar-events/{{EventId}}?calendarId={{CalendarId}}
+Accept: application/json
+
+###
+
+GET {{NeverForget_Server}}/api/calendar-events/notifications?from=2026-09-08T08:49:00%2B02:00&to=2026-09-08T08:51:00%2B02:00&calendarIds={{CalendarId}}
+Accept: application/json
+
+###
+
+POST {{NeverForget_Server}}/api/calendar-events
 Content-Type: application/json
-X-Api-Key: {{ApiKey}}
 
 {
-  "title": "Important meeting",
-  "message": "Join five minutes early.",
-  "cronExpression": "30 18 * * 1-5",
-  "timeZoneId": "Europe/Warsaw"
+  "calendarId": "{{CalendarId}}",
+  "title": "Architecture review",
+  "description": "Review the Google Calendar integration.",
+  "location": "Online",
+  "startsAt": "2026-09-15T09:00:00+02:00",
+  "endsAt": "2026-09-15T10:00:00+02:00",
+  "isAllDay": false,
+  "notificationMinutesBefore": 10
 }
 
 ###
 
-GET {{NeverForget_Server}}/api/reminders?from=2026-09-01T00%3A00%3A00%2B02%3A00&to=2026-09-30T23%3A59%3A59%2B02%3A00
-Accept: application/json
-X-Api-Key: {{ApiKey}}
+PUT {{NeverForget_Server}}/api/calendar-events/{{EventId}}
+Content-Type: application/json
 
-###
-
-GET {{NeverForget_Server}}/api/reminders/due
-Accept: application/json
-X-Api-Key: {{ApiKey}}
+{
+  "calendarId": "{{CalendarId}}",
+  "title": "Updated architecture review",
+  "description": "The time has changed.",
+  "location": "Meeting room",
+  "startsAt": "2026-09-15T10:00:00+02:00",
+  "endsAt": "2026-09-15T11:30:00+02:00",
+  "isAllDay": false,
+  "notificationMinutesBefore": 15
+}

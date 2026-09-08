@@ -1,34 +1,66 @@
 # NeverForget
 
-NeverForget is a reminder application built using a client-server architecture:
+NeverForget is a .NET 8 client/server desktop application for multiple Google calendars:
 
-- `NeverForget.Server` - ASP.NET Core Web API (.NET 8), using SQLite locally and PostgreSQL when hosted;
-- `NeverForget.Client` - WPF application (.NET 8/Windows);
-- `NeverForget.Contracts` - shared REST contracts;
-- `NeverForget.Scheduling` - shared cron parsing and occurrence calculation;
-- `NeverForget.Server.Tests` - API integration tests.
+- `NeverForget.Server` exposes a REST API and communicates with Google Calendar;
+- `NeverForget.Client` is a WPF calendar browser/editor and notification client;
+- `NeverForget.Contracts` contains the shared REST contracts;
+- `NeverForget.Server.Tests` verifies the REST API using a fake Google service.
 
-The client polls the server every 10 seconds for due reminders. A due reminder appears in a centered `Topmost` window. Clicking **OK** completes a one-time reminder or advances a recurring reminder to its next occurrence.
+The previous local reminder database and cron scheduler have been removed. Google Calendar is now the source of truth.
 
-## Cron schedules
+## Features
 
-Reminders can run once at a selected local date and time, or repeat using a standard five-field cron expression and an explicit time zone:
+- select any combination of configured Google calendars;
+- list events between two dates, including instances of recurring Google events;
+- add timed or all-day events to writable calendars;
+- edit existing event title, description, location, dates, times, and notification lead time;
+- poll the server and show due events in a centered, topmost popup;
+- mark calendars as read-only in NeverForget while still displaying their events.
+
+The WPF client must be running to display its own popups. Google events remain available in Google Calendar independently of NeverForget.
+
+## Google service-account setup
+
+This version uses one Google service account. It is a good fit for a personal/single-user deployment because the server can run unattended and does not store a user's refresh token.
+
+1. Create or select a project in Google Cloud Console.
+2. Enable the **Google Calendar API**.
+3. Create a service account and download a JSON key.
+4. In Google Calendar, open each calendar's settings and share it with the service account email.
+5. Grant **Make changes to events** for calendars NeverForget may edit, or a read-only permission for calendars it should only display.
+6. Copy each calendar ID from **Settings and sharing > Integrate calendar > Calendar ID**.
+
+Service accounts are application identities, not normal Google users. A calendar must be explicitly shared with the service account and included in the server configuration. Google Workspace administrators can alternatively configure domain-wide delegation, but user impersonation is not implemented in this version.
+
+For local development, save the downloaded key as:
 
 ```text
-minute  hour  day-of-month  month  day-of-week
+src/NeverForget.Server/google-service-account.json
 ```
 
-Examples:
+The filename is ignored by Git. Never commit a service-account private key.
 
-- `*/10 * * * *` - every 10 minutes;
-- `15 * * * *` - hourly at minute 15;
-- `30 9 * * *` - every day at 09:30;
-- `0 8 * * 1-5` - Monday through Friday at 08:00;
-- `0 12 1 * *` - the first day of every month at 12:00.
-- `0 9 L * *` - the last calendar day of every month at 09:00;
-- `0 9 LW * *` - the last Monday-Friday day of every month at 09:00.
+Then update `src/NeverForget.Server/appsettings.json`:
 
-The **Repeat this reminder** checkbox switches between the one-time date/time editor and the recurring schedule editor. Recurring reminders provide guided minute, hourly, daily, weekly, and monthly modes, including last-day and last-weekday choices, plus a custom cron mode. A recurrence can continue forever or through an inclusive end date. The editor validates the expression and previews up to five runs in the selected time zone.
+```json
+{
+  "GoogleCalendar": {
+    "ServiceAccountCredentialPath": "google-service-account.json",
+    "ServiceAccountCredentialJson": "",
+    "CalendarIds": [
+      "your-address@gmail.com",
+      "project-id@group.calendar.google.com"
+    ],
+    "ReadOnlyCalendarIds": [
+      "holidays-id@group.calendar.google.com"
+    ],
+    "DefaultNotificationMinutesBefore": 10
+  }
+}
+```
+
+`DefaultNotificationMinutesBefore` is used for existing Google events that do not have an explicit popup reminder. Events created or edited by NeverForget receive an explicit popup reminder value.
 
 ## Running locally
 
@@ -44,9 +76,20 @@ In the second terminal:
 dotnet run --project src/NeverForget.Client
 ```
 
-Swagger is available at `http://localhost:5081/swagger`. The `neverforget.db` SQLite database is created automatically in the server's working directory.
+Swagger is available at `http://localhost:5081/swagger`.
 
-When an existing timestamp-based SQLite database is opened for the first time, it is upgraded in place. Each legacy reminder becomes a daily UTC cron schedule at its original hour and minute, and no reminder rows are deleted.
+## Production configuration
+
+Set these environment variables on the host:
+
+- `GoogleCalendar__ServiceAccountCredentialJson` - the complete service-account JSON key;
+- `GoogleCalendar__CalendarIds__0`, `GoogleCalendar__CalendarIds__1`, etc.;
+- `GoogleCalendar__ReadOnlyCalendarIds__0`, etc., when applicable;
+- `GoogleCalendar__DefaultNotificationMinutesBefore`;
+- `ApiKey` - a long random secret shared with the client;
+- `ASPNETCORE_ENVIRONMENT=Production`.
+
+Do not put the credential JSON in a public container image or source repository. Use the hosting provider's secret/environment-variable facility.
 
 ## Client configuration
 
@@ -60,52 +103,28 @@ Settings are stored in `src/NeverForget.Client/appsettings.json`:
 }
 ```
 
-The server address and API key can also be supplied through the `NEVERFORGET_API_URL` and `NEVERFORGET_API_KEY` environment variables. The server address can be changed directly in the client's main window.
-
-## Server configuration
-
-The server uses SQLite when no additional configuration is provided. When hosting it, set:
-
-- `ConnectionStrings__Postgres` - the PostgreSQL connection string;
-- `ApiKey` - a long, randomly generated secret; configure the client with the same value;
-- `ASPNETCORE_ENVIRONMENT=Production`.
-
-The `/health` endpoint does not require a key. All other endpoints require the `X-Api-Key` header when `ApiKey` is configured on the server.
+The server address and API key can also be supplied through `NEVERFORGET_API_URL` and `NEVERFORGET_API_KEY`.
 
 ## REST API
 
-- `POST /api/reminders` - create a one-time or recurring reminder;
-- `PUT /api/reminders/{id}` - update a schedule and recalculate its next occurrence;
-- `DELETE /api/reminders/{id}` - delete a reminder;
-- `GET /api/reminders?from=...&to=...` - expand schedules into occurrences within a time range;
-- `GET /api/reminders/due` - list reminders whose next occurrence is due;
-- `POST /api/reminders/{id}/acknowledge` - advance a reminder to its next future occurrence;
+- `GET /api/calendars` - list configured Google calendars;
+- `GET /api/calendar-events?from=...&to=...&calendarIds=...` - list events;
+- `GET /api/calendar-events/{eventId}?calendarId=...` - get one event;
+- `GET /api/calendar-events/notifications?from=...&to=...&calendarIds=...` - list due notifications;
+- `POST /api/calendar-events` - create an event;
+- `PUT /api/calendar-events/{eventId}` - update an event;
 - `GET /health` - health check.
 
-Date-range responses are limited to the first 1,000 occurrences, ordered chronologically.
+When `ApiKey` is configured, all endpoints except `/health` require the `X-Api-Key` header.
 
-## Tests and client publishing
+## Build and test
 
 ```powershell
+dotnet build NeverForget.sln
 dotnet test NeverForget.sln
 dotnet publish src/NeverForget.Client -c Release -r win-x64 --self-contained false
 ```
 
-The WPF application must remain running to display reminder popups. REST polling cannot wake a closed Windows application.
+## Hoppscotch
 
-## Hoppscotch collection
-
-Import `http/NeverForget.hoppscotch.json` using **Collections > Import > Import from Hoppscotch**. The collection contains a sample request for every endpoint and defines `baseUrl`, `apiKey`, and `reminderId` as collection variables. After creating a reminder, copy its returned `id` into `reminderId` before running the get, update, acknowledge, or delete requests.
-
-## Free MVP hosting: Render + Neon
-
-The simplest free setup without requiring a payment card is:
-
-1. Create a free PostgreSQL database in Neon and copy its connection string.
-2. Push the repository to GitHub or GitLab.
-3. Create a **Web Service** in Render, select the **Docker** runtime, the **Free** plan, and this repository's `Dockerfile`.
-4. Set the health-check path to `/health`.
-5. Add `ConnectionStrings__Postgres`, `ApiKey`, and `ASPNETCORE_ENVIRONMENT=Production` as environment variables.
-6. After deployment, configure the client with the `https://...onrender.com/` address and the same API key.
-
-Do not use free Render Postgres for persistent data because it currently expires after 30 days. A free Render web service spins down after 15 minutes without traffic and may need about a minute to handle the first request after that. While the WPF client is running, its regular REST requests keep the service active. This setup is suitable for an MVP or hobby project, but it does not provide an SLA or second-level reminder delivery guarantees.
+Import `http/NeverForget.hoppscotch.json`. Set its `calendarId` variable to a configured Google calendar ID and copy an event ID returned by create/list into `eventId` before calling get or update.
