@@ -12,7 +12,7 @@ public sealed class ReminderApiClient : IDisposable
     {
         if (!Uri.TryCreate(serverUrl, UriKind.Absolute, out var baseAddress))
         {
-            throw new ArgumentException("Adres serwera jest nieprawidłowy.", nameof(serverUrl));
+            throw new ArgumentException("The server address is invalid.", nameof(serverUrl));
         }
 
         _httpClient = new HttpClient { BaseAddress = baseAddress, Timeout = TimeSpan.FromSeconds(90) };
@@ -73,7 +73,7 @@ public sealed class ReminderApiClient : IDisposable
         }
 
         var details = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new HttpRequestException($"Serwer zwrócił {(int)response.StatusCode} ({response.ReasonPhrase}). {details}");
+        throw new HttpRequestException($"The server returned {(int)response.StatusCode} ({response.ReasonPhrase}). {details}");
     }
 
     public void Dispose() => _httpClient.Dispose();

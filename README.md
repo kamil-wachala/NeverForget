@@ -1,33 +1,33 @@
 # NeverForget
 
-NeverForget to przypominacz w architekturze klient-serwer:
+NeverForget is a reminder application built using a client-server architecture:
 
-- `NeverForget.Server` — ASP.NET Core Web API (.NET 8), lokalnie SQLite, na hostingu PostgreSQL;
-- `NeverForget.Client` — aplikacja WPF (.NET 8/Windows);
-- `NeverForget.Contracts` — współdzielone kontrakty REST;
-- `NeverForget.Server.Tests` — testy integracyjne API.
+- `NeverForget.Server` — ASP.NET Core Web API (.NET 8), using SQLite locally and PostgreSQL when hosted;
+- `NeverForget.Client` — WPF application (.NET 8/Windows);
+- `NeverForget.Contracts` — shared REST contracts;
+- `NeverForget.Server.Tests` — API integration tests.
 
-Klient odpytuje serwer co 10 sekund o należne przypomnienia. Należne przypomnienie pojawia się na środku ekranu w oknie `Topmost`. Kliknięcie **OK** potwierdza je na serwerze, dzięki czemu nie zostanie pokazane ponownie.
+The client polls the server every 10 seconds for due reminders. A due reminder appears in a centered `Topmost` window. Clicking **OK** acknowledges it on the server so it will not be displayed again.
 
-## Uruchomienie lokalne
+## Running locally
 
-W pierwszym terminalu:
+In the first terminal:
 
 ```powershell
 dotnet run --project src/NeverForget.Server --launch-profile http
 ```
 
-W drugim terminalu:
+In the second terminal:
 
 ```powershell
 dotnet run --project src/NeverForget.Client
 ```
 
-Swagger jest dostępny pod `http://localhost:5081/swagger`. Baza SQLite `neverforget.db` powstaje automatycznie w katalogu roboczym serwera.
+Swagger is available at `http://localhost:5081/swagger`. The `neverforget.db` SQLite database is created automatically in the server's working directory.
 
-## Konfiguracja klienta
+## Client configuration
 
-Ustawienia są w `src/NeverForget.Client/appsettings.json`:
+Settings are stored in `src/NeverForget.Client/appsettings.json`:
 
 ```json
 {
@@ -37,46 +37,46 @@ Ustawienia są w `src/NeverForget.Client/appsettings.json`:
 }
 ```
 
-Adres i klucz można też podać zmiennymi środowiskowymi `NEVERFORGET_API_URL` oraz `NEVERFORGET_API_KEY`. Adres serwera można zmienić bezpośrednio w głównym oknie klienta.
+The server address and API key can also be supplied through the `NEVERFORGET_API_URL` and `NEVERFORGET_API_KEY` environment variables. The server address can be changed directly in the client's main window.
 
-## Konfiguracja serwera
+## Server configuration
 
-Bez dodatkowych ustawień serwer używa SQLite. Na hostingu ustaw:
+The server uses SQLite when no additional configuration is provided. When hosting it, set:
 
-- `ConnectionStrings__Postgres` — connection string PostgreSQL;
-- `ApiKey` — długi, losowy sekret; tę samą wartość wpisz w konfiguracji klienta;
+- `ConnectionStrings__Postgres` — the PostgreSQL connection string;
+- `ApiKey` — a long, randomly generated secret; configure the client with the same value;
 - `ASPNETCORE_ENVIRONMENT=Production`.
 
-Endpoint `/health` nie wymaga klucza. Pozostałe endpointy wymagają nagłówka `X-Api-Key`, jeśli `ApiKey` został skonfigurowany na serwerze.
+The `/health` endpoint does not require a key. All other endpoints require the `X-Api-Key` header when `ApiKey` is configured on the server.
 
 ## REST API
 
-- `POST /api/reminders` — dodanie;
-- `PUT /api/reminders/{id}` — edycja i ponowne uzbrojenie;
-- `DELETE /api/reminders/{id}` — usunięcie;
-- `GET /api/reminders?from=...&to=...` — lista w okresie;
-- `GET /api/reminders/due` — niepotwierdzone przypomnienia, których czas już nadszedł;
-- `POST /api/reminders/{id}/acknowledge` — potwierdzenie;
+- `POST /api/reminders` — create a reminder;
+- `PUT /api/reminders/{id}` — update and rearm a reminder;
+- `DELETE /api/reminders/{id}` — delete a reminder;
+- `GET /api/reminders?from=...&to=...` — list reminders within a time range;
+- `GET /api/reminders/due` — list unacknowledged reminders that are due;
+- `POST /api/reminders/{id}/acknowledge` — acknowledge a reminder;
 - `GET /health` — health check.
 
-## Testy i publikacja klienta
+## Tests and client publishing
 
 ```powershell
 dotnet test NeverForget.sln
 dotnet publish src/NeverForget.Client -c Release -r win-x64 --self-contained false
 ```
 
-WPF musi działać w tle, aby wyświetlać popupy. REST polling nie obudzi zamkniętej aplikacji Windows.
+The WPF application must remain running to display reminder popups. REST polling cannot wake a closed Windows application.
 
-## Darmowy hosting MVP: Render + Neon
+## Free MVP hosting: Render + Neon
 
-Najprostszy wariant bez opłat i bez karty płatniczej to:
+The simplest free setup without requiring a payment card is:
 
-1. Utwórz darmową bazę PostgreSQL w Neon i skopiuj connection string.
-2. Umieść repozytorium w GitHubie lub GitLabie.
-3. W Render utwórz **Web Service**, wybierz runtime **Docker**, plan **Free** i ten `Dockerfile`.
-4. Ustaw health check na `/health`.
-5. Dodaj zmienne `ConnectionStrings__Postgres`, `ApiKey` i `ASPNETCORE_ENVIRONMENT=Production`.
-6. Po wdrożeniu wpisz adres `https://...onrender.com/` i ten sam klucz API w konfiguracji klienta.
+1. Create a free PostgreSQL database in Neon and copy its connection string.
+2. Push the repository to GitHub or GitLab.
+3. Create a **Web Service** in Render, select the **Docker** runtime, the **Free** plan, and this repository's `Dockerfile`.
+4. Set the health-check path to `/health`.
+5. Add `ConnectionStrings__Postgres`, `ApiKey`, and `ASPNETCORE_ENVIRONMENT=Production` as environment variables.
+6. After deployment, configure the client with the `https://...onrender.com/` address and the same API key.
 
-Nie używaj darmowego Render Postgres do trwałych danych — obecnie wygasa po 30 dniach. Darmowy web service Render usypia po 15 minutach bez ruchu i może potrzebować około minuty na pierwszy start. Gdy klient WPF jest uruchomiony, regularne zapytania REST utrzymują usługę aktywną. Jest to dobre rozwiązanie dla MVP/hobby, ale nie zapewnia SLA ani gwarantowanych powiadomień co do sekundy.
+Do not use free Render Postgres for persistent data because it currently expires after 30 days. A free Render web service spins down after 15 minutes without traffic and may need about a minute to handle the first request after that. While the WPF client is running, its regular REST requests keep the service active. This setup is suitable for an MVP or hobby project, but it does not provide an SLA or second-level reminder delivery guarantees.

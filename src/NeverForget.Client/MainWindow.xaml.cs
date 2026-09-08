@@ -70,13 +70,13 @@ public partial class MainWindow : Window
     {
         if (FromDatePicker.SelectedDate is not DateTime fromDate || ToDatePicker.SelectedDate is not DateTime toDate)
         {
-            ShowError("Wybierz datę początkową i końcową.");
+            ShowError("Select both a start date and an end date.");
             return;
         }
 
         if (fromDate.Date > toDate.Date)
         {
-            ShowError("Data początkowa nie może być późniejsza niż końcowa.");
+            ShowError("The start date cannot be later than the end date.");
             return;
         }
 
@@ -92,7 +92,7 @@ public partial class MainWindow : Window
                 Reminders.Add(new ReminderListItem(reminder));
             }
 
-            StatusTextBlock.Text = $"Pobrano {Reminders.Count} przypomnień. Ostatnia aktualizacja: {DateTime.Now:HH:mm:ss}";
+            StatusTextBlock.Text = $"Loaded {Reminders.Count} reminders. Last updated: {DateTime.Now:T}";
         });
     }
 
@@ -108,12 +108,12 @@ public partial class MainWindow : Window
             if (_editedReminderId is Guid id)
             {
                 await GetApiClient().UpdateAsync(id, new UpdateReminderRequest(title, message, scheduledAt));
-                StatusTextBlock.Text = "Przypomnienie zostało zaktualizowane.";
+                StatusTextBlock.Text = "The reminder was updated.";
             }
             else
             {
                 await GetApiClient().CreateAsync(new CreateReminderRequest(title, message, scheduledAt));
-                StatusTextBlock.Text = "Przypomnienie zostało dodane.";
+                StatusTextBlock.Text = "The reminder was added.";
             }
 
             ResetEditor();
@@ -124,7 +124,7 @@ public partial class MainWindow : Window
     private async void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         if (_editedReminderId is not Guid id
-            || MessageBox.Show("Usunąć wybrane przypomnienie?", "NeverForget", MessageBoxButton.YesNo,
+            || MessageBox.Show("Delete the selected reminder?", "NeverForget", MessageBoxButton.YesNo,
                 MessageBoxImage.Question) != MessageBoxResult.Yes)
         {
             return;
@@ -153,8 +153,8 @@ public partial class MainWindow : Window
         }
 
         _editedReminderId = selected.Id;
-        EditorHeading.Text = "Edytuj przypomnienie";
-        SaveButton.Content = "Zapisz";
+        EditorHeading.Text = "Edit reminder";
+        SaveButton.Content = "Save";
         DeleteButton.Visibility = Visibility.Visible;
         TitleTextBox.Text = selected.Title;
         MessageTextBox.Text = selected.Message;
@@ -197,7 +197,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or ArgumentException)
         {
-            StatusTextBlock.Text = $"Brak połączenia z serwerem: {ex.Message}";
+            StatusTextBlock.Text = $"Cannot connect to the server: {ex.Message}";
         }
         finally
         {
@@ -213,7 +213,7 @@ public partial class MainWindow : Window
 
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(message))
         {
-            ShowError("Tytuł i treść są wymagane.");
+            ShowError("Title and message are required.");
             return false;
         }
 
@@ -221,7 +221,7 @@ public partial class MainWindow : Window
             || !TimeSpan.TryParseExact(ScheduledTimeTextBox.Text.Trim(), ["h\\:mm", "hh\\:mm"],
                 CultureInfo.InvariantCulture, out var time))
         {
-            ShowError("Wybierz datę i podaj czas w formacie HH:mm.");
+            ShowError("Select a date and enter the time in HH:mm format.");
             return false;
         }
 
@@ -232,8 +232,8 @@ public partial class MainWindow : Window
     private void ResetEditor()
     {
         _editedReminderId = null;
-        EditorHeading.Text = "Nowe przypomnienie";
-        SaveButton.Content = "Dodaj";
+        EditorHeading.Text = "New reminder";
+        SaveButton.Content = "Add";
         DeleteButton.Visibility = Visibility.Collapsed;
         TitleTextBox.Clear();
         MessageTextBox.Clear();

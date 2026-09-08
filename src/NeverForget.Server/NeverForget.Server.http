@@ -11,8 +11,8 @@ Content-Type: application/json
 X-Api-Key: {{ApiKey}}
 
 {
-  "title": "Ważne spotkanie",
-  "message": "Połącz się pięć minut wcześniej.",
+  "title": "Important meeting",
+  "message": "Join five minutes early.",
   "scheduledAt": "2026-09-07T18:30:00+02:00"
 }
 

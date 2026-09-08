@@ -12,7 +12,7 @@ public partial class ReminderPopup : Window
         InitializeComponent();
         TitleTextBlock.Text = reminder.Title;
         MessageTextBlock.Text = reminder.Message;
-        ScheduledAtTextBlock.Text = $"Termin: {reminder.ScheduledAt.LocalDateTime:dd.MM.yyyy HH:mm}";
+        ScheduledAtTextBlock.Text = $"Scheduled for: {reminder.ScheduledAt.LocalDateTime:f}";
     }
 
     private void OkButton_Click(object sender, RoutedEventArgs e)

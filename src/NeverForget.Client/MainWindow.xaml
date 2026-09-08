@@ -29,10 +29,10 @@
         <DockPanel Grid.Row="0" Margin="0,0,0,18">
             <StackPanel DockPanel.Dock="Left">
                 <TextBlock Text="NeverForget" FontSize="30" FontWeight="SemiBold" Foreground="#17213C" />
-                <TextBlock Text="Twoje przypomnienia, zawsze na czas" Foreground="#65708A" FontSize="14" />
+                <TextBlock Text="Your reminders, right on time" Foreground="#65708A" FontSize="14" />
             </StackPanel>
             <StackPanel DockPanel.Dock="Right" Width="390">
-                <TextBlock Text="Adres serwera" FontWeight="SemiBold" />
+                <TextBlock Text="Server address" FontWeight="SemiBold" />
                 <TextBox x:Name="ServerUrlTextBox" Margin="0,4,0,0" />
             </StackPanel>
         </DockPanel>
@@ -41,15 +41,15 @@
             <DockPanel>
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                     <StackPanel Margin="0,0,14,0">
-                        <TextBlock Text="Od" FontWeight="SemiBold" />
+                        <TextBlock Text="From" FontWeight="SemiBold" />
                         <DatePicker x:Name="FromDatePicker" Width="150" />
                     </StackPanel>
                     <StackPanel>
-                        <TextBlock Text="Do" FontWeight="SemiBold" />
+                        <TextBlock Text="To" FontWeight="SemiBold" />
                         <DatePicker x:Name="ToDatePicker" Width="150" />
                     </StackPanel>
                 </StackPanel>
-                <Button Content="Odśwież listę" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                <Button Content="Refresh list" DockPanel.Dock="Right" HorizontalAlignment="Right"
                         VerticalAlignment="Center" Background="#3157D5" Foreground="White"
                         Click="RefreshButton_Click" />
             </DockPanel>
@@ -68,8 +68,8 @@
                           GridLinesVisibility="Horizontal" BorderThickness="0"
                           SelectionChanged="RemindersGrid_SelectionChanged">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Data i czas" Binding="{Binding ScheduledAtLocal, StringFormat={}{0:dd.MM.yyyy HH:mm}}" Width="145" />
-                        <DataGridTextColumn Header="Tytuł" Binding="{Binding Title}" Width="*" />
+                        <DataGridTextColumn Header="Date and time" Binding="{Binding ScheduledAtLocal, StringFormat={}{0:g}}" Width="145" />
+                        <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="*" />
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110" />
                     </DataGrid.Columns>
                 </DataGrid>
@@ -78,21 +78,21 @@
             <Border Grid.Column="2" Background="White" CornerRadius="10" Padding="18">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <TextBlock x:Name="EditorHeading" Text="Nowe przypomnienie" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14" />
-                        <TextBlock Text="Tytuł" FontWeight="SemiBold" />
+                        <TextBlock x:Name="EditorHeading" Text="New reminder" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,14" />
+                        <TextBlock Text="Title" FontWeight="SemiBold" />
                         <TextBox x:Name="TitleTextBox" MaxLength="120" />
-                        <TextBlock Text="Treść" FontWeight="SemiBold" />
+                        <TextBlock Text="Message" FontWeight="SemiBold" />
                         <TextBox x:Name="MessageTextBox" MaxLength="2000" MinHeight="110"
                                  AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
-                        <TextBlock Text="Data" FontWeight="SemiBold" />
+                        <TextBlock Text="Date" FontWeight="SemiBold" />
                         <DatePicker x:Name="ScheduledDatePicker" />
-                        <TextBlock Text="Czas (HH:mm)" FontWeight="SemiBold" />
+                        <TextBlock Text="Time (HH:mm)" FontWeight="SemiBold" />
                         <TextBox x:Name="ScheduledTimeTextBox" />
                         <WrapPanel HorizontalAlignment="Right" Margin="0,10,0,0">
-                            <Button Content="Wyczyść" Click="ClearButton_Click" />
-                            <Button x:Name="DeleteButton" Content="Usuń" Foreground="#A11D2C"
+                            <Button Content="Clear" Click="ClearButton_Click" />
+                            <Button x:Name="DeleteButton" Content="Delete" Foreground="#A11D2C"
                                     Visibility="Collapsed" Click="DeleteButton_Click" />
-                            <Button x:Name="SaveButton" Content="Dodaj" Background="#3157D5" Foreground="White"
+                            <Button x:Name="SaveButton" Content="Add" Background="#3157D5" Foreground="White"
                                     Click="SaveButton_Click" />
                         </WrapPanel>
                     </StackPanel>
