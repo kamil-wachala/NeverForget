@@ -26,8 +26,8 @@ public partial class MainWindow : Window
         DataContext = this;
 
         ServerUrlTextBox.Text = _settings.ServerUrl;
-        FromDatePicker.SelectedDate = DateTime.Today.AddDays(-7);
-        ToDatePicker.SelectedDate = DateTime.Today.AddDays(30);
+        FromDatePicker.SelectedDate = DateTime.Today;
+        ToDatePicker.SelectedDate = DateTime.Today.AddDays(14);
         ResetEditor();
 
         _pollingTimer = new DispatcherTimer
